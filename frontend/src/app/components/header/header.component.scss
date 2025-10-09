@@ -1,0 +1,103 @@
+.header {
+  background-color: #003869;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  justify-content: space-between;
+  position: relative;
+}
+
+.logo {
+  height: 40px;
+  width: auto;
+  cursor: pointer;
+}
+
+nav {
+  padding: 1.5rem 2rem;
+  color: #fff;
+  position: relative;
+}
+
+.checkbtn {
+  font-size: 1.5rem;
+  color: white;
+  cursor: pointer;
+  display: none;
+}
+
+.nav-mobile {
+  display: none;
+  position: absolute;
+  right: 0px;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+#check {
+  display: none;
+}
+
+#check + .checkbtn {
+  display: block;
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  border-radius: 5px;
+  position: relative;
+  cursor: pointer;
+}
+
+#check + .checkbtn::before {
+  content: '\f0c9';
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: #003869;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#check:checked + .checkbtn::before {
+  content: '\f00d';
+}
+
+#check:checked ~ .nav-mobile {
+  display: block;
+  top: calc(100% + 10px); // Positioniere das dropdown Menu unter dem checkbtn
+  right: 0;
+  background: rgba(34, 40, 49, 0.8);
+  z-index: 1;
+  width: 150px;
+  padding: 10px;
+}
+
+//macht das aussehen der links im Menu
+.nav-mobile a {
+  color: #fff;
+  padding: 0.5rem 1rem;
+  display: block;
+}
+
+@media only screen and (max-width: 992px) {
+  .checkbtn {
+    display: block;
+    width: 30px;
+    height: 30px;
+    font-size: 2rem;
+    position: absolute;
+    top: 15px;
+    left: 15px;
+  }
+  #check:checked ~ .nav-mobile {
+    width: 150px;
+    right: 10px;
+  }
+  .nav-mobile a {
+    font-size: 1.2rem;
+    padding: 1rem 1.5rem;
+  }
+}

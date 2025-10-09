@@ -1,0 +1,612 @@
+@use "primeicons/primeicons.css";
+
+@plugin "tailwindcss-primeui";
+@layer tailwind, primeng;
+
+@layer tailwind {
+  @import "tailwindcss";
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&display=swap');
+@import "primeicons/primeicons.css";
+
+:root {
+  /* BTC AG Theme Variables */
+  --primary-color: #0078C8; /* BTC AG blue */
+  --primary-color-text: #ffffff;
+  --secondary-color: #00A0E6; /* Lighter blue */
+  --secondary-color-text: #ffffff;
+  --accent-color: #FF8200; /* Orange accent */
+  --accent-color-text: #ffffff;
+  --surface-ground: #f8f9fa;
+  --surface-section: #ffffff;
+  --surface-card: #ffffff;
+  --surface-overlay: #ffffff;
+  --surface-border: #e9ecef;
+  --surface-hover: #f1f3f5;
+  --focus-ring: 0 0 0 0.2rem rgba(0, 120, 200, 0.25);
+  --maskbg: rgba(0, 0, 0, 0.4);
+  --highlight-bg: #e6f4fc;
+  --highlight-text-color: #0078C8;
+  --text-color: #343a40;
+  --text-color-secondary: #bdbaba;
+  --font-family: 'Roboto', 'Open Sans', sans-serif;
+
+  /* Font */
+  font-family: var(--font-family), 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-weight: normal;
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Apply consistent styling to the body */
+body {
+  font-family: var(--font-family);
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Reset and normalize */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better focus management */
+*:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Improve text rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.custom-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--surface-900);
+}
+
+.custom-dialog-header-text {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-dialog-header-close-button {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.custom-dialog-header-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.custom-dialog-header-close-button .pi-times {
+  color: #6b7280;
+}
+
+.custom-dialog-header-close-button:hover .pi-times {
+  color: black;
+}
+
+/* BTC AG Component Styling */
+
+/* Button styling */
+.p-button {
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-link) {
+  background: var(--primary-color);
+  color: var(--primary-color-text);
+  border: 1px solid var(--primary-color);
+}
+
+.p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-link):hover {
+  background: var(--secondary-color);
+  color: var(--secondary-color-text);
+  border: 1px solid var(--secondary-color);
+}
+
+.p-button.p-button-outlined {
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.p-button.p-button-outlined:hover {
+  background: rgba(0, 120, 200, 0.04);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+/* Card styling */
+.p-card {
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.p-card .p-card-title {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.p-card .p-card-subtitle {
+  color: var(--text-color-secondary);
+}
+
+/* Table styling */
+.p-datatable .p-datatable-header {
+  background: var(--surface-section);
+  border: 1px solid var(--surface-border);
+  border-width: 1px 1px 0 1px;
+  padding: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--surface-section);
+  color: var(--text-color);
+  border: 1px solid var(--surface-border);
+  border-width: 0 0 1px 0;
+  font-weight: 600;
+  transition: box-shadow 0.2s;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: var(--surface-card);
+  color: var(--text-color);
+  transition: box-shadow 0.2s;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background: var(--surface-hover);
+}
+
+/* Input styling */
+.p-inputtext {
+  border-radius: 4px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.p-inputtext:enabled:focus {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-color);
+}
+
+/* Dropdown styling */
+.p-dropdown {
+  border-radius: 4px;
+}
+
+.p-dropdown:not(.p-disabled).p-focus {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-color);
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight {
+  color: var(--primary-color);
+  background: var(--highlight-bg);
+}
+
+/* MultiSelect styling */
+.p-multiselect {
+  border-radius: 4px;
+}
+
+.p-multiselect:not(.p-disabled).p-focus {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-color);
+}
+
+.p-multiselect-option.p-multiselect-option-selected {
+  background: rgb(197, 197, 197);
+}
+
+.p-multiselect-option.p-multiselect-option-selected.p-focus {
+  background: #b5b5b5;
+  color: #1e293b;
+  border-color: white;
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight {
+  color: var(--primary-color);
+  background: var(--highlight-bg);
+}
+
+/* Checkbox styling */
+.p-checkbox .p-checkbox-box {
+  border-radius: 4px;
+  border: 1px solid var(--text-color-secondary);
+  width: 20px;
+  height: 20px;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+
+.p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.p-checkbox-checked .p-checkbox-box {
+  background: #00A0E6;
+}
+
+
+.p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box.p-focus {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-color);
+}
+
+.p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box.p-highlight:hover {
+  background: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+/* Radio button styling */
+.p-radiobutton .p-radiobutton-box {
+  border: 2px solid var(--text-color-secondary);
+  width: 20px;
+  height: 20px;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.p-radiobutton .p-radiobutton-box.p-highlight {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.p-radiobutton:not(.p-radiobutton-disabled) .p-radiobutton-box.p-focus {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-color);
+}
+
+.p-radiobutton:not(.p-radiobutton-disabled) .p-radiobutton-box.p-highlight:hover {
+  background: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+.p-radiobutton .p-radiobutton-box .p-radiobutton-icon {
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  width: 50%;
+  height: 50%;
+  top: 25%;
+  left: 25%;
+}
+
+
+/* Toggle switch styling */
+.p-inputswitch .p-inputswitch-slider {
+  background: var(--surface-border);
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  border-radius: 30px;
+}
+
+.p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
+  background: var(--primary-color);
+}
+
+.p-inputswitch.p-focus .p-inputswitch-slider {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: var(--focus-ring);
+}
+
+.p-inputswitch:not(.p-disabled):hover .p-inputswitch-slider {
+  background: var(--text-color-secondary);
+}
+
+.p-inputswitch.p-inputswitch-checked:not(.p-disabled):hover .p-inputswitch-slider {
+  background: var(--secondary-color);
+}
+
+/* Toast styling */
+.p-toast .p-toast-message {
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.p-toast .p-toast-message.p-toast-message-info {
+  background: var(--highlight-bg);
+  border-left: 6px solid var(--primary-color);
+  color: var(--text-color);
+}
+
+.p-toast .p-toast-message.p-toast-message-success {
+  background: #e4f8f0;
+  border-left: 6px solid #34c38f;
+  color: var(--text-color);
+}
+
+.p-toast .p-toast-message.p-toast-message-warn {
+  background: #fff8e1;
+  border-left: 6px solid #f1b44c;
+  color: var(--text-color);
+}
+
+.p-toast .p-toast-message.p-toast-message-error {
+  background: #fde7e9;
+  border-left: 6px solid #f46a6a;
+  color: var(--text-color);
+}
+
+/* Paginator styling */
+.p-paginator {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-width: 0;
+  padding: 0.5rem 1rem;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  background: var(--highlight-bg);
+  border-color: var(--highlight-bg);
+  color: var(--primary-color);
+}
+
+.p-select-option.p-select-option-selected.p-focus {
+  background: grey;
+  color: white;
+}
+
+
+/* Tooltip styling */
+.p-tooltip .p-tooltip-text {
+  background: var(--text-color);
+  color: var(--primary-color-text);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Additional BTC AG styling */
+
+/* Link styling */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+/* Heading styling */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family);
+  color: var(--text-color);
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.75rem;
+}
+
+h4 {
+  font-size: 1.5rem;
+}
+
+h5 {
+  font-size: 1.25rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
+
+/* Utility classes */
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.text-secondary {
+  color: var(--secondary-color) !important;
+}
+
+.text-accent {
+  color: var(--accent-color) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary-color) !important;
+  color: var(--primary-color-text) !important;
+}
+
+.bg-secondary {
+  background-color: var(--secondary-color) !important;
+  color: var(--secondary-color-text) !important;
+}
+
+.bg-accent {
+  background-color: var(--accent-color) !important;
+  color: var(--accent-color-text) !important;
+}
+
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+.shadow {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.shadow-lg {
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+}
+
+.rounded {
+  border-radius: 4px !important;
+}
+
+.rounded-circle {
+  border-radius: 50% !important;
+}
+
+.border {
+  border: 1px solid var(--surface-border) !important;
+}
+
+.border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+.border-secondary {
+  border-color: var(--secondary-color) !important;
+}
+
+.border-accent {
+  border-color: var(--accent-color) !important;
+}
+
+.no-transition *,
+.no-transition *::before,
+.no-transition *::after {
+  transition: none !important;
+}
+
+/* Additional utility classes for layout and spacing */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.p-3 {
+  padding: 0.75rem;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+
+.rounded-2xl {
+  border-radius: 1rem;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.transition {
+  transition: all 0.2s ease;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+}

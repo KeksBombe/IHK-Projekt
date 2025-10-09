@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: backend
+  ai:
+    retry:
+      max-attempts: 3
+      backoff:
+        initial-interval: 500ms
+        multiplier: 2
+        max-interval: 5s
+    mcp:
+      client:
+        enabled: true
+        type: ASYNC
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+    azure:
+      openai:
+        api-key: ${AZURE_OPENAI_API_KEY:}
+        endpoint: ${AZURE_OPENAI_ENDPOINT:}
+        chat:
+          options:
+            deployment-name: ${AZURE_OPENAI_CHAT_DEPLOYMENT:gpt-4o}
+            temperature: 0.3
+
+# Add better logging for debugging MCP tool issues
+logging:
+  level:
+    com.example.backend.mcp: DEBUG
+    org.springframework.ai.mcp: DEBUG
+    io.modelcontextprotocol: DEBUG
+    com.example.backend: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}

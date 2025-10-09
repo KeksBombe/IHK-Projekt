@@ -1,0 +1,55 @@
+<!-- landing-page.component.html -->
+<div class="landing-page">
+  <p-toast/>
+  <!-- Content -->
+  <main class="main-content">
+    <!-- Left Column -->
+    <div class="left-column">
+      <div class="projects-card">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold m-0">Projects</h3>
+          <div class="flex items-center gap-2">
+            <app-project-search (searchChange)="onSearchChange($event)"></app-project-search>
+            <p-button icon="pi pi-plus" label="Neues Projekt" iconPos="right" (click)="showDialog()"/>
+          </div>
+        </div>
+        <p-dialog header="Neues Projekt erstellen" [modal]="true" [(visible)]="visible" [style]="{ width: '25rem' }">
+          <div class="flex items-center gap-4 mb-8">
+            <label for="projectname" class="font-semibold w-24">Projektname</label>
+            <input pInputText id="projectname" class="flex-auto" autocomplete="off" [(ngModel)]="projectName"/>
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <p-button label="Cancel" severity="secondary" (click)="closeDialog()"/>
+            <p-button label="Save" (click)="saveProject()"/>
+          </div>
+        </p-dialog>
+        <p-dataview
+          [value]="filteredProjects"
+          [paginator]="true"
+          [rows]="6"
+          layout="list"
+          emptyMessage="No projects found.">
+
+          <ng-template #list let-items>
+            @for (project of items; track project.id) {
+              <app-project-item
+                [project]="project">
+              </app-project-item>
+            }
+          </ng-template>
+        </p-dataview>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-column">
+      <app-continue-section
+        [item]="continueItem">
+      </app-continue-section>
+
+      <app-recent-projects
+        [projects]="recentProjects">
+      </app-recent-projects>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,9 @@
+<div class="story-item" [routerLink]="['/project', story.projectID, 'story', story.id]">
+  <div class="story-content">
+    <div class="story-info">
+      <i [ngClass]="icon" class="story-icon"></i>
+      <span class="story-name">{{ story.name }}</span>
+    </div>
+    <i class="pi pi-arrow-right story-arrow"></i>
+  </div>
+</div>

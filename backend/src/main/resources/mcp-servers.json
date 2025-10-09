@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": [
+        "./node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
+        "."
+      ]
+    },
+    "playwright": {
+      "command": "node",
+      "args": [
+        "./node_modules/@playwright/mcp/cli.js",
+        "--isolated"
+      ]
+    }
+  }
+}

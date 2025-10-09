@@ -1,0 +1,271 @@
+<div class="project-page">
+  <p-card class="ml-72 mr-72 rounded-2xl">
+    <header class="page-header">
+      <div class="flex items-center gap-2">
+        @if (!isLoading) {
+          <h2>{{ currentProject.name }}</h2>
+          <p-button
+            icon="pi pi-pencil"
+            [rounded]="true"
+            [text]="true"
+            (onClick)="showEditDialog()">
+          </p-button>
+        } @else {
+          <p>Loading project...</p>
+        }
+      </div>
+    </header>
+  </p-card>
+
+  <p-dialog
+    [(visible)]="displayDialog"
+    [header]="'Edit Project Name'"
+    [modal]="true"
+    [style]="{width: '450px'}">
+    <div class="flex flex-col gap-3">
+      <label for="projectName">Project Name</label>
+      <input
+        id="projectName"
+        type="text"
+        pInputText
+        [(ngModel)]="editedName"
+        class="w-full"/>
+    </div>
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Cancel"
+        icon="pi pi-times"
+        (onClick)="displayDialog = false"
+        [text]="true">
+      </p-button>
+      <p-button
+        label="Save"
+        icon="pi pi-check"
+        (onClick)="saveName()">
+      </p-button>
+    </ng-template>
+  </p-dialog>
+
+  @if (!isLoading) {
+    <main class="main-content">
+      <!-- Left Column: User stories -->
+      <div class="left-column">
+        <section class="content-card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold m-0">User stories</h3>
+            <div class="flex items-center gap-2">
+              <app-project-search placeholder="Stories suchen..."
+                                  (searchChange)="onStorySearchChange($event)"></app-project-search>
+              <p-button label="Neu" icon="pi pi-plus" (click)="showAddUserStory = true">
+              </p-button>
+            </div>
+          </div>
+          <p-dataView
+            [value]="filteredStorys"
+            [paginator]="true"
+            [rows]="6"
+            layout="list"
+            emptyMessage="Keine User Stories vorhanden">
+
+            <ng-template #list let-items>
+              @for (story of items; track story.id) {
+                <app-story-item
+                  [story]="story">
+                </app-story-item>
+              }
+            </ng-template>
+          </p-dataView>
+        </section>
+      </div>
+
+      <!-- Right Column: Environments -->
+      <div class="right-column">
+        <section class="content-card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold m-0">Umgebungen</h3>
+            <div class="flex items-center gap-2">
+              <app-project-search placeholder="Umgebungen suchen..."
+                                  (searchChange)="onEnvSearchChange($event)"></app-project-search>
+              <p-button label="Neu" icon="pi pi-plus" (click)="showAddEnvironment = true">
+              </p-button>
+            </div>
+          </div>
+          <p-dataView
+            [value]="filteredEnvironments"
+            [rows]="6"
+            [paginator]="true"
+            layout="list"
+            emptyMessage="Keine Umgebungen vorhanden">
+            <ng-template #list let-items>
+              @for (env of items; track env.id) {
+                <app-env-item
+                  [env]="env"
+                  (envClick)="onEnvClick($event)">
+                </app-env-item>
+              }
+            </ng-template>
+          </p-dataView>
+        </section>
+      </div>
+    </main>
+  }
+
+  <!-- Dialog: Add User Story -->
+  <p-dialog header="Add User Story" [(visible)]="showAddUserStory" [modal]="true" [style]="{width: '480px'}">
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="us-name">Name</label>
+      <input id="us-name" type="text" pInputText [(ngModel)]="newUserStoryName" placeholder="Title"/>
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="us-desc">Description</label>
+      <input id="us-desc" type="text" pInputText [(ngModel)]="newUserStoryDescription"
+             placeholder="Short description"/>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button type="button" class="p-button p-component p-button-text" (click)="showAddUserStory = false">Cancel
+      </button>
+      <button type="button" class="p-button p-component" (click)="addUserStory()"
+              [disabled]="!newUserStoryName || !newUserStoryName.trim()">Add
+      </button>
+    </div>
+  </p-dialog>
+
+  <!-- Dialog: Add Environment -->
+  <p-dialog header="Add Environment" [(visible)]="showAddEnvironment" [modal]="true" [style]="{width: '480px'}">
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="env-name">Name</label>
+      <input id="env-name" type="text" pInputText [(ngModel)]="newEnvironmentName" placeholder="e.g., Staging"/>
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="env-url">URL</label>
+      <input id="env-url" type="text" pInputText [(ngModel)]="newEnvironmentUrl" placeholder="https://..."
+             name="newEnvironmentURl" required
+             pattern="(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?\/[a-zA-Z0-9]{2,}|((https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?)|(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,})?"
+             #envUrl="ngModel"/>
+      @if (envUrl.invalid && envUrl.touched) {
+        <p-message severity="error" size="small" variant="simple">
+          Bitte geben Sie eine gültige URL ein.
+        </p-message>
+      }
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="env-user">Username</label>
+      <input id="env-user" type="text" pInputText [(ngModel)]="newEnvironmentUsername"/>
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="env-pass">Password</label>
+      <input id="env-pass" type="password" pInputText [(ngModel)]="newEnvironmentPassword"/>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button type="button" class="p-button p-component p-button-text" (click)="showAddEnvironment = false">Cancel
+      </button>
+      <button type="button" class="p-button p-component" (click)="addEnvironment()"
+              [disabled]="
+                !newEnvironmentName?.trim() ||
+                !newEnvironmentUrl?.trim() ||
+                envUrl.invalid ||
+                !newEnvironmentUsername?.trim() ||
+                !newEnvironmentPassword?.trim()
+              ">Add
+      </button>
+    </div>
+  </p-dialog>
+
+  <!-- Dialog: Environment Details -->
+  <p-dialog
+    [header]="selectedEnvironment?.name || 'Environment Details'"
+    [(visible)]="showEnvDetailDialog"
+    [modal]="true"
+    [style]="{width: '480px'}">
+    @if (selectedEnvironment) {
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Name</label>
+          <p class="m-0">{{ selectedEnvironment.name }}</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">URL</label>
+          <p class="m-0">{{ selectedEnvironment.url }}</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold">Username</label>
+          <p class="m-0">{{ selectedEnvironment.username }}</p>
+        </div>
+      </div>
+    }
+    <ng-template pTemplate="footer">
+      <div class="flex justify-between w-full">
+        <p-button
+          label="Löschen"
+          icon="pi pi-trash"
+          severity="danger"
+          (onClick)="deleteEnvironment()"
+          [text]="true">
+        </p-button>
+        <div class="flex gap-2">
+          <p-button
+            label="Schließen"
+            icon="pi pi-times"
+            (onClick)="showEnvDetailDialog = false"
+            [text]="true">
+          </p-button>
+          <p-button
+            label="Bearbeiten"
+            icon="pi pi-pencil"
+            (onClick)="openEditEnvironment()">
+          </p-button>
+        </div>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Edit Environment -->
+  <p-dialog header="Environment bearbeiten" [(visible)]="showEditEnvironment" [modal]="true" [style]="{width: '480px'}">
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="edit-env-name">Name</label>
+      <input id="edit-env-name" type="text" pInputText [(ngModel)]="editEnvironmentName"/>
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="edit-env-url">URL</label>
+      <input id="edit-env-url" type="text" pInputText [(ngModel)]="editEnvironmentUrl"
+             name="editEnvironmentUrl" required
+             pattern="(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?\/[a-zA-Z0-9]{2,}|((https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?)|(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,})?"
+             #editEnvUrl="ngModel"/>
+      @if (editEnvUrl.invalid && editEnvUrl.touched) {
+        <p-message severity="error" size="small" variant="simple">
+          Bitte geben Sie eine gültige URL ein.
+        </p-message>
+      }
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="edit-env-user">Username</label>
+      <input id="edit-env-user" type="text" pInputText [(ngModel)]="editEnvironmentUsername"/>
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="edit-env-pass">Password</label>
+      <input id="edit-env-pass" type="password" pInputText [(ngModel)]="editEnvironmentPassword"/>
+    </div>
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Abbrechen"
+        icon="pi pi-times"
+        (onClick)="showEditEnvironment = false"
+        [text]="true">
+      </p-button>
+      <p-button
+        label="Speichern"
+        icon="pi pi-check"
+        (onClick)="saveEnvironment()"
+        [disabled]="
+          !editEnvironmentName?.trim() ||
+          !editEnvironmentUrl?.trim() ||
+          editEnvUrl.invalid ||
+          !editEnvironmentUsername?.trim() ||
+          !editEnvironmentPassword?.trim()
+        ">
+      </p-button>
+    </ng-template>
+  </p-dialog>
+
+  <router-outlet/>
+</div>

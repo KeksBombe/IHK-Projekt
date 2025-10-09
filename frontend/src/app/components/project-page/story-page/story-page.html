@@ -1,0 +1,178 @@
+<div class="story-page">
+  <p-card class="ml-72 mr-72 rounded-2xl">
+    <header class="page-header">
+      <div class="flex items-center gap-2">
+        @if (!isLoading) {
+          <h2>{{ currentStory.name }}</h2>
+          <p-button
+            icon="pi pi-pencil"
+            [rounded]="true"
+            [text]="true"
+            (onClick)="showEditDialog()">
+          </p-button>
+        } @else {
+          <p>Loading story...</p>
+        }
+      </div>
+      @if (!isLoading && currentStory.description) {
+        <p class="story-description">{{ currentStory.description }}</p>
+      }
+    </header>
+  </p-card>
+
+  @if (!isLoading) {
+    <main class="main-content">
+      <p-splitter [style]="{'height': 'calc(100vh - 250px)'}" [panelSizes]="splitterSizes" styleClass="mb-5">
+        <!-- Left Panel: Tests List -->
+        <ng-template pTemplate>
+          <div class="splitter-panel-content">
+            <section class="content-card">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold m-0">Tests</h3>
+                <div class="flex items-center gap-2">
+                  <app-project-search
+                    placeholder="Tests suchen..."
+                    (searchChange)="onTestSearchChange($event)">
+                  </app-project-search>
+                  <p-button
+                    label="Neu"
+                    icon="pi pi-plus"
+                    (click)="showAddTest = true">
+                  </p-button>
+                </div>
+              </div>
+              <p-dataView
+                [value]="filteredTests"
+                [paginator]="true"
+                [rows]="10"
+                layout="list"
+                emptyMessage="Keine Tests vorhanden">
+                <ng-template #list let-items>
+                  @for (test of items; track test.id) {
+                    <app-test-item
+                      [test]="test"
+                      [isSelected]="selectedTest?.id === test.id"
+                      (testClick)="onTestClick($event)">
+                    </app-test-item>
+                  }
+                </ng-template>
+              </p-dataView>
+            </section>
+          </div>
+        </ng-template>
+
+        <!-- Right Panel: Test Details -->
+        <ng-template pTemplate>
+          <div class="splitter-panel-content">
+            @if (selectedTest) {
+              <section class="content-card">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-semibold m-0">Test Details</h3>
+                  <p-button
+                    icon="pi pi-times"
+                    [rounded]="true"
+                    [text]="true"
+                    severity="secondary"
+                    (onClick)="splitterSizes = [100, 0]; selectedTest = null">
+                  </p-button>
+                </div>
+                <div class="test-details">
+                  <pre class="test-json">{{ selectedTest | json }}</pre>
+                </div>
+              </section>
+            } @else {
+              <section class="content-card empty-state">
+                <div class="flex flex-col items-center justify-center h-full text-center">
+                  <i class="pi pi-info-circle text-4xl text-gray-400 mb-3"></i>
+                  <p class="text-gray-500">Wählen Sie einen Test aus der Liste aus</p>
+                </div>
+              </section>
+            }
+          </div>
+        </ng-template>
+      </p-splitter>
+    </main>
+  }
+
+  <!-- Dialog: Edit Story -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [header]="'User Story bearbeiten'"
+    [modal]="true"
+    [style]="{width: '450px'}">
+    <div class="flex flex-col gap-3 mb-3">
+      <label for="storyName">Name</label>
+      <input
+        id="storyName"
+        type="text"
+        pInputText
+        [(ngModel)]="editedName"
+        class="w-full"/>
+    </div>
+    <div class="flex flex-col gap-3">
+      <label for="storyDesc">Beschreibung</label>
+      <input
+        id="storyDesc"
+        type="text"
+        pInputText
+        [(ngModel)]="editedDescription"
+        class="w-full"/>
+    </div>
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Abbrechen"
+        icon="pi pi-times"
+        (onClick)="displayDialog = false"
+        [text]="true">
+      </p-button>
+      <p-button
+        label="Speichern"
+        icon="pi pi-check"
+        (onClick)="saveName()">
+      </p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Add Test -->
+  <p-dialog
+    header="Neuen Test hinzufügen"
+    [(visible)]="showAddTest"
+    [modal]="true"
+    [style]="{width: '480px'}">
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="test-name">Name</label>
+      <input
+        id="test-name"
+        type="text"
+        pInputText
+        [(ngModel)]="newTestName"
+        placeholder="Test-Name"/>
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="test-desc">Beschreibung</label>
+      <input
+        id="test-desc"
+        type="text"
+        pInputText
+        [(ngModel)]="newTestDescription"
+        placeholder="Kurze Beschreibung"/>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        class="p-button p-component p-button-text"
+        (click)="showAddTest = false">
+        Abbrechen
+      </button>
+      <button
+        type="button"
+        class="p-button p-component"
+        (click)="addTest()"
+        [disabled]="!newTestName || !newTestName.trim()">
+        Hinzufügen
+      </button>
+    </div>
+  </p-dialog>
+
+  <router-outlet/>
+</div>

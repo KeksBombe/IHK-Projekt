@@ -1,0 +1,53 @@
+::ng-deep {
+  .p-breadcrumb {
+    background: transparent;
+    padding: 0.75rem 1rem;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+
+    .p-breadcrumb-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+
+      li {
+        display: flex;
+        align-items: center;
+        color: var(--text-color-secondary);
+        font-size: 0.9rem;
+
+        a {
+          color: var(--primary-color);
+          text-decoration: none;
+          transition: color 0.2s;
+
+          &:hover {
+            color: var(--primary-color-hover, var(--primary-color));
+            text-decoration: underline;
+          }
+        }
+
+        .p-menuitem-text {
+          font-weight: 500;
+        }
+
+        .p-breadcrumb-chevron {
+          margin: 0 0.5rem;
+          color: var(--surface-border);
+          font-size: 0.8rem;
+        }
+
+        &:last-child {
+          color: var(--text-color);
+          font-weight: 600;
+
+          a {
+            pointer-events: none;
+            color: var(--text-color);
+          }
+        }
+      }
+    }
+  }
+}

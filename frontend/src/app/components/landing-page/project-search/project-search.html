@@ -1,0 +1,12 @@
+<!-- project-search.component.html -->
+<div class="search-container flex items-center gap-2">
+  <p-iconfield>
+    <p-inputicon class="pi pi-search"/>
+    <input type="text"
+           pInputText
+           [placeholder]="placeholder"
+           class="search-input flex-1"
+           (input)="onSearchInput($event)"
+    />
+  </p-iconfield>
+</div>

@@ -1,0 +1,10 @@
+<div class="test-item" [class.selected]="isSelected" (click)="onClick()">
+  <div class="test-content">
+    <div class="test-info">
+      <i [ngClass]="icon" class="test-icon"></i>
+      <span class="test-name">{{ test.name }}</span>
+    </div>
+    <i class="pi pi-arrow-right test-arrow"></i>
+  </div>
+</div>
+

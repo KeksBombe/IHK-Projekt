@@ -1,0 +1,37 @@
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-ground);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Ensure proper height calculation
+  height: calc(100vh - 60px); // 60px is header height
+}
+
+// Global improvements for better consistency
+* {
+  box-sizing: border-box;
+}
+
+// Ensure smooth scrolling
+html {
+  scroll-behavior: smooth;
+}
+
+// Improve focus visibility
+*:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+// Remove default focus outline for mouse users
+.no-focus-outline *:focus:not(:focus-visible) {
+  outline: none;
+}

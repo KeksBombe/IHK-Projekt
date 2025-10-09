@@ -1,0 +1,56 @@
+.story-item {
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 0.875rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin-top: 0.5rem;
+
+  &:hover {
+    background: var(--surface-hover);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+    border-color: var(--primary-color);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .story-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .story-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .story-icon {
+      color: var(--primary-color);
+      font-size: 1.25rem;
+    }
+
+    .story-name {
+      color: var(--text-color);
+      font-weight: 500;
+      font-family: var(--font-family);
+    }
+  }
+
+  .story-arrow {
+    color: var(--text-color-secondary);
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  &:hover .story-arrow {
+    color: var(--primary-color);
+    transform: translateX(2px);
+  }
+}

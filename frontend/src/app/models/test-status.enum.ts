@@ -1,0 +1,8 @@
+export enum TestStatus {
+  PENDING = 'PENDING',
+  GENERATING = 'GENERATING',
+  FIXING = 'FIXING',
+  FAILED = 'FAILED',
+  PASSED = 'PASSED',
+  SKIPPED = 'SKIPPED'
+}
