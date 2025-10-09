@@ -1,0 +1,96 @@
+target/
+!frontend/.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+*.iws
+*.iml
+*.ipr
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+# -------------------------------
+# IDEs
+# -------------------------------
+.vscode/
+.idea/
+*.iml
+
+# -------------------------------
+# Node.js / Frontend
+# -------------------------------
+node_modules/
+package-lock.json
+dist/
+htmlReport/
+*.log
+
+# -------------------------------
+# Java / Maven / Backend
+# -------------------------------
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/
+.mvn/wrapper/maven-wrapper.jar
+
+# -------------------------------
+# Docker
+# -------------------------------
+*.env
+docker-compose.override.yml
+*.dockerignore
+
+# -------------------------------
+# Database / local data
+# -------------------------------
+db-data/
+*.sql
+*.sqlite
+*.db
+*.backup
+
+# -------------------------------
+# System files
+# -------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+
+# -------------------------------
+# Misc
+# -------------------------------
+.idea/
+*.iml
+*.log
