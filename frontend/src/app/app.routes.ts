@@ -1,7 +1,7 @@
 import {Routes} from '@angular/router';
 import {LandingPage} from './components/landing-page/landing-page';
 import {ProjectPage} from './components/project-page/project-page';
-import {StoryPage} from './components/project-page/story-page/story-page';
+import StoryPage from './components/project-page/story-page/story-page';
 
 export const routes: Routes = [
   {

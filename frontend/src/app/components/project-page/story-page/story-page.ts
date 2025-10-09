@@ -10,10 +10,12 @@ import {UserStoryService} from '../../../services/user-story.service';
 import {TestService} from '../../../services/test.service';
 import {TestItem} from './test-item/test-item';
 import {ProjectSearch} from '../../landing-page/project-search/project-search';
-import {JsonPipe} from '@angular/common';
 import {Dialog} from 'primeng/dialog';
 import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
+import {TestEditor} from './test-editor/test-editor';
+import {HttpStatusCode} from '../../../models/HttpStatusCode';
+import {Toast} from 'primeng/toast';
 
 @Component({
   selector: 'app-story-page',
@@ -27,15 +29,16 @@ import {FormsModule} from '@angular/forms';
     Splitter,
     TestItem,
     ProjectSearch,
-    JsonPipe,
     Dialog,
     InputText,
-    FormsModule
+    FormsModule,
+    TestEditor,
+    Toast
   ],
   templateUrl: './story-page.html',
   styleUrl: './story-page.scss'
 })
-export class StoryPage implements OnInit {
+class StoryPage implements OnInit {
   readonly projectId: number;
   readonly storyId: number;
   private route = inject(ActivatedRoute);
@@ -53,10 +56,8 @@ export class StoryPage implements OnInit {
   editedName = '';
   editedDescription = '';
 
-  // Splitter sizes
   splitterSizes: number[] = [100, 0];
 
-  // Dialog für neuen Test
   showAddTest = false;
   newTestName = '';
   newTestDescription = '';
@@ -68,17 +69,25 @@ export class StoryPage implements OnInit {
 
   ngOnInit(): void {
     // Lade User Story Details
-    this.userStoryService.getUserStories(this.projectId).subscribe(stories => {
-      const story = stories.find(s => s.id === this.storyId);
-      if (story) {
-        this.currentStory = story;
+    this.userStoryService.getUserStories(this.projectId).subscribe({
+      next: response => {
+        const stories = response.body || [];
+        const story = stories.find(s => s.id === this.storyId);
+        if (story) {
+          this.currentStory = story;
+        }
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        console.error('Error loading user stories:', err.status, err.message);
+        this.isLoading = false;
       }
-      this.isLoading = false;
-      this.cdr.detectChanges();
     });
 
-    this.testService.getTestsByUserStoryId(this.storyId).subscribe(tests => {
-      this.tests = tests;
+
+    this.testService.getTestsByUserStoryId(this.storyId).subscribe(response => {
+      this.tests = response.body ?? [];
       this.filteredTests = [...this.tests];
       this.cdr.detectChanges();
     });
@@ -86,8 +95,7 @@ export class StoryPage implements OnInit {
 
   onTestClick(test: Test): void {
     this.selectedTest = test;
-    // Animiere den Splitter, um die rechte Seite zu öffnen
-    this.splitterSizes = [50, 50];
+    this.splitterSizes = [30, 70];
     this.cdr.detectChanges();
   }
 
@@ -108,17 +116,23 @@ export class StoryPage implements OnInit {
   }
 
   saveName(): void {
-    // Update current story
     this.currentStory = {
       ...this.currentStory,
       name: this.editedName,
       description: this.editedDescription
     };
 
-    // TODO: Service-Call zum Aktualisieren der User Story
-    // this.userStoryService.updateUserStory(this.currentStory).subscribe(...);
-
-    this.displayDialog = false;
+    this.userStoryService.updateUserStory(this.currentStory).subscribe({
+      next: response => {
+        if (response.status === HttpStatusCode.Ok && response.body) {
+          this.currentStory = response.body;
+          this.displayDialog = false;
+          this.cdr.detectChanges();
+        } else {
+          console.error('Failed to update user story:', response);
+        }
+      }
+    });
   }
 
   addTest(): void {
@@ -126,18 +140,28 @@ export class StoryPage implements OnInit {
       id: 0,
       name: this.newTestName,
       description: this.newTestDescription,
-      testJson: '',
-      environmentId: 0,
-      projectId: this.projectId
+      testCSV: '',
+      environmentID: 0,
+      storyID: this.storyId
     };
 
-    this.testService.createTest(newTest).subscribe(test => {
-      this.tests.push(test);
-      this.filteredTests = [...this.tests];
+    this.testService.createTest(newTest).subscribe(response => {
+      const test = response.body;
+      if (test) {
+        this.tests.push(test);
+        this.filteredTests = [...this.tests];
+      }
       this.newTestName = '';
       this.newTestDescription = '';
       this.showAddTest = false;
       this.cdr.detectChanges();
     });
   }
+
+  closeSplitter() {
+    this.selectedTest = null;
+    this.splitterSizes = [100, 0];
+  }
 }
+
+export default StoryPage

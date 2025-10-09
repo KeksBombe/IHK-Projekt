@@ -1,0 +1,98 @@
+<div class="test-editor">
+  <div class="flex items-center justify-between mb-4">
+    <h4 class="text-base font-semibold m-0">{{ test.name }}</h4>
+    <div class="flex gap-2">
+      <p-button
+        label="Neue Zeile"
+        icon="pi pi-plus"
+        size="small"
+        (onClick)="addRow()">
+      </p-button>
+      <p-button
+        label="Speichern"
+        icon="pi pi-save"
+        size="small"
+        [loading]="isSaving()"
+        (onClick)="saveTest()">
+      </p-button>
+    </div>
+  </div>
+
+  @if (test.description) {
+    <p class="text-sm text-gray-600 mb-4">{{ test.description }}</p>
+  }
+
+  <p-table
+    #dt
+    [value]="testSteps()"
+    [columns]="cols"
+    [tableStyle]="{ 'min-width': '50rem' }"
+  >
+
+    <ng-template pTemplate="header" let-columns>
+      <tr>
+        <th style="width: 3rem"></th>
+        <th *ngFor="let col of columns" style="width: 30%">
+          {{ col.header }}
+        </th>
+        <th style="width: 5rem">Aktionen</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-rowData let-index="rowIndex">
+      <tr [pReorderableRow]="index">
+        <td>
+          <span class="pi pi-bars" pReorderableRowHandle></span>
+        </td>
+        <td>
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="rowData.aktion"
+            (ngModelChange)="onCellEdit()"
+            class="w-full"
+            placeholder="Aktion eingeben..."/>
+        </td>
+        <td>
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="rowData.daten"
+            (ngModelChange)="onCellEdit()"
+            class="w-full"
+            placeholder="Daten eingeben..."/>
+        </td>
+        <td>
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="rowData.erwartetesResultat"
+            (ngModelChange)="onCellEdit()"
+            class="w-full"
+            placeholder="Erwartetes Resultat eingeben..."/>
+        </td>
+        <td>
+          <p-button
+            icon="pi pi-trash"
+            [rounded]="true"
+            [text]="true"
+            severity="danger"
+            size="small"
+            (onClick)="deleteRow(index)">
+          </p-button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="5" class="text-center py-4">
+          <div class="flex flex-col items-center gap-2">
+            <i class="pi pi-inbox text-3xl text-gray-400"></i>
+            <p class="text-gray-500">Keine Testschritte vorhanden. Fügen Sie einen neuen Schritt hinzu.</p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

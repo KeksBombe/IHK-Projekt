@@ -11,7 +11,7 @@ import {Dialog} from 'primeng/dialog';
 import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
 import {MessageService} from 'primeng/api';
-import {Toast, ToastModule} from 'primeng/toast';
+import {Toast} from 'primeng/toast';
 
 @Component({
   selector: 'app-landing-page',
@@ -46,8 +46,8 @@ export class LandingPage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.projectService.getAllProjects().subscribe((data: Project[]) => {
-      this.projects = data;
+    this.projectService.getAllProjects().subscribe(response => {
+      this.projects = response.body ?? [];
       console.log('Projects loaded:', this.projects);
       this.updateFilteredProjects();
       this.continueItem = this.projects[0];
@@ -88,16 +88,18 @@ export class LandingPage implements OnInit {
           const status = response.status;
 
           if (status === 201) {
-            const newProject: Project = response.body as Project;
-            this.projects.push(newProject);
-            this.cdr.detectChanges();
-            this.updateFilteredProjects();
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Projekt "' + this.projectName + '" wurde erstellt'
-            });
-            this.projectName = '';
+            const newProject: Project | null = response.body;
+            if (newProject) {
+              this.projects.push(newProject);
+              this.cdr.detectChanges();
+              this.updateFilteredProjects();
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Projekt "' + this.projectName + '" wurde erstellt'
+              });
+              this.projectName = '';
+            }
           } else {
             this.messageService.add({
               severity: 'error',

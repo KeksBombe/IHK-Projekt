@@ -11,8 +11,8 @@ export class ProjectService {
   constructor(private http: HttpClient) {
   }
 
-  getAllProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(`${this.backendUrl}/getAllProjects`);
+  getAllProjects(): Observable<HttpResponse<Project[]>> {
+    return this.http.get<Project[]>(`${this.backendUrl}/getAllProjects`, {observe: 'response'});
   }
 
   createProject(projectName: string): Observable<HttpResponse<Project>> {
@@ -20,12 +20,11 @@ export class ProjectService {
     return this.http.post<Project>(`${this.backendUrl}/createProject`, project, {observe: 'response'});
   }
 
-  getProjectById(projectId: number): Observable<Project> {
-    return this.http.get<Project>(`${this.backendUrl}/getProjectById/${projectId}`);
+  getProjectById(projectId: number): Observable<HttpResponse<Project>> {
+    return this.http.get<Project>(`${this.backendUrl}/getProjectById/${projectId}`, {observe: 'response'});
   }
 
   renameProject(project: Project): Observable<HttpResponse<Project>> {
     return this.http.patch<Project>(`${this.backendUrl}/renameProject/${project.id}`, project, {observe: 'response'});
   }
 }
-

@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpResponse} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {Agent} from '../models/aiagent';
 
@@ -22,8 +22,8 @@ export class AIService {
   constructor(private http: HttpClient) {
   }
 
-  callAi(agent: Agent, prompt: string): Observable<AgentCallResponse> {
+  callAi(agent: Agent, prompt: string): Observable<HttpResponse<AgentCallResponse>> {
     const body: AgentCallRequest = {name: agent.name, instructions: agent.instructions, prompt};
-    return this.http.post<AgentCallResponse>(`${this.baseUrl}/call`, body);
+    return this.http.post<AgentCallResponse>(`${this.baseUrl}/call`, body, {observe: 'response'});
   }
 }

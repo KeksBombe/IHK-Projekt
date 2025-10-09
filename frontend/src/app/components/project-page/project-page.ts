@@ -82,21 +82,27 @@ export class ProjectPage implements OnInit {
   isLoading = true;
 
   ngOnInit(): void {
-    this.projectService.getProjectById(this.projectId).subscribe(project => {
-      this.currentProject = project;
+    this.projectService.getProjectById(this.projectId).subscribe(response => {
+      this.currentProject = response.body ?? {id: -1, name: ''};
       this.isLoading = false;
       this.cdr.detectChanges();
     });
 
-    this.userStoryService.getUserStories(this.projectId).subscribe(userStories => {
-      console.table(userStories);
-      this.userStories = userStories;
-      this.filteredStorys = [...this.userStories];
-      this.cdr.detectChanges();
+    this.userStoryService.getUserStories(this.projectId).subscribe({
+      next: response => {
+        const userStories = response.body || [];
+        console.table(userStories);
+        this.userStories = userStories;
+        this.filteredStorys = [...this.userStories];
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        console.error('Failed to load user stories:', err.status, err.message);
+      }
     });
 
-    this.envService.getEnvironmentsByProjectId(this.projectId).subscribe(environments => {
-      this.environments = environments;
+    this.envService.getEnvironmentsByProjectId(this.projectId).subscribe(response => {
+      this.environments = response.body ?? [];
       this.filteredEnvironments = [...this.environments];
       this.cdr.detectChanges();
     })
@@ -111,13 +117,25 @@ export class ProjectPage implements OnInit {
       projectID: this.projectId
     };
 
-    this.userStoryService.createUserStory(newUserStory).subscribe(userStory => {
-      this.userStories.push(userStory);
-      this.filteredStorys = [...this.userStories];
-      this.newUserStoryName = '';
-      this.newUserStoryDescription = '';
-      this.showAddUserStory = false;
-      this.cdr.detectChanges();
+    this.userStoryService.createUserStory(newUserStory).subscribe({
+      next: response => {
+        const userStory = response.body;
+        if (userStory) {
+          this.userStories.push(userStory);
+          this.filteredStorys = [...this.userStories];
+        } else {
+          console.warn('No user story returned in response:', response);
+        }
+
+        // Reset form and close dialog
+        this.newUserStoryName = '';
+        this.newUserStoryDescription = '';
+        this.showAddUserStory = false;
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        console.error('Failed to create user story:', err.status, err.message);
+      }
     });
   }
 
@@ -130,9 +148,12 @@ export class ProjectPage implements OnInit {
       password: this.newEnvironmentPassword,
       projectID: this.projectId
     }
-    this.envService.createEnvironment(newEnv).subscribe(env => {
-      this.environments.push(env);
-      this.filteredEnvironments = [...this.environments];
+    this.envService.createEnvironment(newEnv).subscribe(response => {
+      const env = response.body;
+      if (env) {
+        this.environments.push(env);
+        this.filteredEnvironments = [...this.environments];
+      }
       this.newEnvironmentName = '';
       this.newEnvironmentUrl = '';
       this.newEnvironmentUsername = '';
@@ -203,11 +224,14 @@ export class ProjectPage implements OnInit {
         password: this.editEnvironmentPassword
       };
 
-      this.envService.updateEnvironment(updatedEnv.id, updatedEnv).subscribe(env => {
-        const index = this.environments.findIndex(e => e.id === env.id);
-        if (index !== -1) {
-          this.environments[index] = env;
-          this.filteredEnvironments = [...this.environments];
+      this.envService.updateEnvironment(updatedEnv.id, updatedEnv).subscribe(response => {
+        const env = response.body;
+        if (env) {
+          const index = this.environments.findIndex(e => e.id === env.id);
+          if (index !== -1) {
+            this.environments[index] = env;
+            this.filteredEnvironments = [...this.environments];
+          }
         }
         this.showEditEnvironment = false;
         this.selectedEnvironment = null;

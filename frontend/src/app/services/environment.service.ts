@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpResponse} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {Environment} from '../models';
 
@@ -13,23 +13,23 @@ export class EnvironmentService {
   constructor(private http: HttpClient) {
   }
 
-  getEnvironmentById(id: number): Observable<Environment> {
-    return this.http.get<Environment>(`${this.baseUrl}/getEnvironmentById/${id}`);
+  getEnvironmentById(id: number): Observable<HttpResponse<Environment>> {
+    return this.http.get<Environment>(`${this.baseUrl}/getEnvironmentById/${id}`, {observe: 'response'});
   }
 
-  createEnvironment(environment: Environment): Observable<Environment> {
-    return this.http.post<Environment>(`${this.baseUrl}/createEnvironment`, environment);
+  createEnvironment(environment: Environment): Observable<HttpResponse<Environment>> {
+    return this.http.post<Environment>(`${this.baseUrl}/createEnvironment`, environment, {observe: 'response'});
   }
 
-  updateEnvironment(id: number, environment: Environment): Observable<Environment> {
-    return this.http.patch<Environment>(`${this.baseUrl}/updateEnvironment/${id}`, environment);
+  updateEnvironment(id: number, environment: Environment): Observable<HttpResponse<Environment>> {
+    return this.http.patch<Environment>(`${this.baseUrl}/updateEnvironment/${id}`, environment, {observe: 'response'});
   }
 
-  deleteEnvironment(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/deleteEnvironment/${id}`);
+  deleteEnvironment(id: number): Observable<HttpResponse<void>> {
+    return this.http.delete<void>(`${this.baseUrl}/deleteEnvironment/${id}`, {observe: 'response'});
   }
 
-  getEnvironmentsByProjectId(projectId: number): Observable<Environment[]> {
-    return this.http.get<Environment[]>(`${this.baseUrl}/getEnvironmentsByProjectId/${projectId}`);
+  getEnvironmentsByProjectId(projectId: number): Observable<HttpResponse<Environment[]>> {
+    return this.http.get<Environment[]>(`${this.baseUrl}/getEnvironmentsByProjectId/${projectId}`, {observe: 'response'});
   }
 }
