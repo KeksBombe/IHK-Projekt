@@ -1,14 +1,12 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {Environment} from '../../../models';
 import {NgClass} from '@angular/common';
-import {RouterLink} from '@angular/router';
 
 @Component({
   selector: 'app-env-item',
   standalone: true,
   imports: [
-    NgClass,
-    RouterLink
+    NgClass
   ],
   templateUrl: './env-item.html',
   styleUrl: './env-item.scss'

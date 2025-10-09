@@ -1,9 +1,9 @@
-import {ChangeDetectorRef, Component, inject, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnInit, signal} from '@angular/core';
 import {ActivatedRoute, RouterOutlet} from '@angular/router';
 import {Card} from 'primeng/card';
 import {Button} from 'primeng/button';
 import {DataView} from 'primeng/dataview';
-import {PrimeTemplate} from 'primeng/api';
+import {MessageService, PrimeTemplate} from 'primeng/api';
 import {Splitter} from 'primeng/splitter';
 import {Test, UserStory} from '../../../models';
 import {UserStoryService} from '../../../services/user-story.service';
@@ -45,6 +45,7 @@ class StoryPage implements OnInit {
   private userStoryService = inject(UserStoryService);
   private testService = inject(TestService);
   private cdr = inject(ChangeDetectorRef);
+  private messageService = inject(MessageService);
 
   currentStory: UserStory = {id: -1, name: '', description: '', projectID: -1};
   tests: Test[] = [];
@@ -144,23 +145,35 @@ class StoryPage implements OnInit {
       environmentID: 0,
       storyID: this.storyId
     };
-
-    this.testService.createTest(newTest).subscribe(response => {
-      const test = response.body;
-      if (test) {
-        this.tests.push(test);
-        this.filteredTests = [...this.tests];
+    console.table(newTest);
+    this.testService.createTest(newTest).subscribe({
+      next: response => {
+        if (response.status === HttpStatusCode.Created && response.body) {
+          const newTest = response.body;
+          this.tests.push(newTest);
+          this.selectedTest = newTest;
+          this.filteredTests = [...this.tests];
+          this.newTestName = '';
+          this.newTestDescription = '';
+          this.showAddTest = false;
+          this.splitterSizes = [30, 70];
+          this.cdr.detectChanges();
+        } else {
+          console.error('Failed to create test:', response);
+        }
       }
-      this.newTestName = '';
-      this.newTestDescription = '';
-      this.showAddTest = false;
-      this.cdr.detectChanges();
     });
   }
 
   closeSplitter() {
     this.selectedTest = null;
     this.splitterSizes = [100, 0];
+  }
+
+  deleteItem(id: number) {
+    this.tests = this.tests.filter(t => t.id !== id);
+    this.filteredTests = [...this.tests];
+    this.closeSplitter();
   }
 }
 

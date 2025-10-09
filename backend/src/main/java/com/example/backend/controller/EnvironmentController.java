@@ -3,7 +3,6 @@ package com.example.backend.controller;
 
 import com.example.backend.models.Environment;
 import com.example.backend.repo.EnvironmentRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,14 +16,14 @@ import java.util.stream.Collectors;
 public class EnvironmentController
 {
 
-    @Autowired
-    private EnvironmentRepo environmentRepo;
+    private final EnvironmentRepo environmentRepo;
 
     private static final String MASKED_PASSWORD = "************";
 
-    /**
-     * CRUD operations for Environment entity.
-     */
+    public EnvironmentController (EnvironmentRepo environmentRepo)
+    {
+        this.environmentRepo = environmentRepo;
+    }
 
     /**
      * Masks the password in an Environment object

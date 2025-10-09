@@ -161,11 +161,11 @@
       </button>
       <button type="button" class="p-button p-component" (click)="addEnvironment()"
               [disabled]="
-                !newEnvironmentName?.trim() ||
-                !newEnvironmentUrl?.trim() ||
+                !newEnvironmentName.trim() ||
+                !newEnvironmentUrl.trim() ||
                 envUrl.invalid ||
-                !newEnvironmentUsername?.trim() ||
-                !newEnvironmentPassword?.trim()
+                !newEnvironmentUsername.trim() ||
+                !newEnvironmentPassword.trim()
               ">Add
       </button>
     </div>
@@ -257,11 +257,11 @@
         icon="pi pi-check"
         (onClick)="saveEnvironment()"
         [disabled]="
-          !editEnvironmentName?.trim() ||
-          !editEnvironmentUrl?.trim() ||
+          !editEnvironmentName.trim() ||
+          !editEnvironmentUrl.trim() ||
           editEnvUrl.invalid ||
-          !editEnvironmentUsername?.trim() ||
-          !editEnvironmentPassword?.trim()
+          !editEnvironmentUsername.trim() ||
+          !editEnvironmentPassword.trim()
         ">
       </p-button>
     </ng-template>

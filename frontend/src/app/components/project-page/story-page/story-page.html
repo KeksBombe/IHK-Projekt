@@ -26,7 +26,7 @@
       <p-splitter [style]="{'height': 'calc(100vh - 250px)'}" [panelSizes]="splitterSizes" class="mb-5">
         <!-- Left Panel: Tests List -->
         <ng-template pTemplate>
-          <div class="splitter-panel-content, p-4">
+          <div class="splitter-panel-content">
             <section class="content-card">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold m-0">Tests</h3>
@@ -78,7 +78,7 @@
                   </p-button>
                 </div>
                 <div class="test-details">
-                  <app-test-editor [test]="selectedTest"></app-test-editor>
+                  <app-test-editor [test]="selectedTest" (deleteItem)="deleteItem($event)"></app-test-editor>
                 </div>
               </section>
             } @else {

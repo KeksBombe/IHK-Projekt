@@ -4,7 +4,6 @@ package com.example.backend.controller;
 import com.example.backend.models.UserStory;
 import com.example.backend.repo.UserStoryRepo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +16,12 @@ import java.util.List;
 public class UserStoryController
 {
 
-    @Autowired
-    private UserStoryRepo userStoryRepo;
+    private final UserStoryRepo userStoryRepo;
+
+    public UserStoryController (UserStoryRepo userStoryRepo)
+    {
+        this.userStoryRepo = userStoryRepo;
+    }
 
     @GetMapping("/getUserStories/{id}")
     public ResponseEntity<List<UserStory>> getUserStories (@PathVariable Long id)

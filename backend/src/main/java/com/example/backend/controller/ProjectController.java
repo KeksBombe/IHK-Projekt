@@ -3,22 +3,24 @@ package com.example.backend.controller;
 
 import com.example.backend.models.Project;
 import com.example.backend.repo.ProjectRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 
 @RestController
 public class ProjectController
 {
 
-    @Autowired
-    private ProjectRepo projectRepo;
+    private final ProjectRepo projectRepo;
+
+    public ProjectController (ProjectRepo projectRepo)
+    {
+        this.projectRepo = projectRepo;
+    }
 
     @GetMapping("/getAllProjects")
     public ResponseEntity<List<Project>> getAllProjects ()
@@ -44,13 +46,14 @@ public class ProjectController
     {
         try
         {
-            Optional<Project> project = projectRepo.findById(id);
-            if (project.isPresent())
+            if (projectRepo.existsById(id))
             {
-                return ResponseEntity.ok(project.get());
+                return projectRepo.findById(id)
+                        .map(ResponseEntity::ok)
+                        .orElseGet(() -> ResponseEntity.noContent().build());
             } else
             {
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.noContent().build();
             }
         } catch (Exception e)
         {

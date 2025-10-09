@@ -7,7 +7,7 @@ import {
   effect,
   signal,
   OnChanges,
-  SimpleChanges
+  SimpleChanges, Output, EventEmitter, input, output
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
@@ -17,6 +17,7 @@ import {InputTextModule} from 'primeng/inputtext';
 import {Test} from '../../../../models';
 import {TestService} from '../../../../services/test.service';
 import {MessageService} from 'primeng/api';
+import {HttpStatusCode} from '../../../../models/HttpStatusCode';
 
 @Component({
   selector: 'app-test-editor',
@@ -32,13 +33,15 @@ import {MessageService} from 'primeng/api';
   styleUrl: './test-editor.scss'
 })
 export class TestEditor implements OnInit, OnChanges {
-  @Input() test!: Test;
+  test = input.required<Test>();
+  deleteItem = output<number>();
 
   private testService = inject(TestService);
   private messageService = inject(MessageService);
 
   testSteps = signal<TestStep[]>([]);
   isSaving = signal<boolean>(false);
+  isDeleting = signal<boolean>(false);
 
   cols = [
     {field: 'aktion', header: 'Aktion'},
@@ -59,9 +62,9 @@ export class TestEditor implements OnInit, OnChanges {
   private loadTestData(): void {
     const steps: TestStep[] = [];
 
-    if (this.test && this.test.testCSV) {
-      console.log('testCSV:', this.test.testCSV);
-      const parsedSteps = this.parseCSV(this.test.testCSV);
+    if (this.test && this.test().testCSV) {
+      console.log('testCSV:', this.test().testCSV);
+      const parsedSteps = this.parseCSV(this.test().testCSV);
       steps.push(...parsedSteps);
       console.log('Parsed testSteps:', steps);
     }
@@ -173,11 +176,11 @@ export class TestEditor implements OnInit, OnChanges {
   }
 
   updateTestCSV(): void {
-    this.test.testCSV = this.generateCSV();
+    this.test().testCSV = this.generateCSV();
   }
 
   saveTest(): void {
-    if (!this.test || !this.test.id) {
+    if (!this.test || !this.test().id) {
       this.messageService.add({
         severity: 'error',
         summary: 'Fehler',
@@ -189,7 +192,7 @@ export class TestEditor implements OnInit, OnChanges {
     this.isSaving.set(true);
     this.updateTestCSV();
 
-    this.testService.updateTest(this.test.id, this.test).subscribe({
+    this.testService.updateTest(this.test().id, this.test()).subscribe({
       next: () => {
         this.isSaving.set(false);
         this.messageService.add({
@@ -208,5 +211,27 @@ export class TestEditor implements OnInit, OnChanges {
         });
       }
     });
+  }
+
+  confirmDelete() {
+    this.isDeleting.set(true);
+    if (this.test) {
+      this.testService.deleteTest(this.test().id).subscribe({
+        next: response => {
+          if (response.status === HttpStatusCode.Ok) {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Erfolg',
+              detail: 'Test erfolgreich gelöscht'
+            });
+            this.deleteItem.emit(this.test().id);
+            this.isDeleting.set(false);
+          } else {
+            console.error('Failed to delete test:', response);
+            this.isDeleting.set(false);
+          }
+        }
+      });
+    }
   }
 }

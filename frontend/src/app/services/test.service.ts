@@ -36,6 +36,6 @@ export class TestService {
 
   /** Delete a test by its ID */
   deleteTest(id: number): Observable<HttpResponse<void>> {
-    return this.http.delete<void>(`${this.backendUrl}/deleteTest/${id}`, {observe: 'response'});
+    return this.http.delete<void>(`${this.backendUrl}/test/${id}`, {observe: 'response'});
   }
 }

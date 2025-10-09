@@ -4,7 +4,6 @@ package com.example.backend.controller;
 import com.example.backend.models.TestModel;
 import com.example.backend.repo.TestRepo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +16,12 @@ import java.util.List;
 public class TestController
 {
 
-    @Autowired
-    private TestRepo testRepo;
+    private final TestRepo testRepo;
+
+    public TestController (TestRepo testRepo)
+    {
+        this.testRepo = testRepo;
+    }
 
     @GetMapping("/getTests/{id}")
     public ResponseEntity<List<TestModel>> getTests (@PathVariable Long id)
@@ -36,7 +39,7 @@ public class TestController
     }
 
     @PostMapping("/test")
-    public ResponseEntity<TestModel> createTest (TestModel test)
+    public ResponseEntity<TestModel> createTest (@RequestBody TestModel test)
     {
         try
         {
