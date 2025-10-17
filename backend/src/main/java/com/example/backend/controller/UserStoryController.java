@@ -40,6 +40,21 @@ public class UserStoryController
         }
     }
 
+    @GetMapping("/userStory/{id}")
+    public ResponseEntity<UserStory> getUserStoryById (@PathVariable Long id)
+    {
+        log.debug("REST request to get UserStory : {}", id);
+        try
+        {
+            return userStoryRepo.findById(id)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.noContent().build());
+        } catch (Exception e)
+        {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @PostMapping("/userStory")
     public ResponseEntity<UserStory> createUserStory (@RequestBody UserStory userStory)
     {

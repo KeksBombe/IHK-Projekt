@@ -1,23 +1,19 @@
-import {
-  Component,
-  Input,
-  OnInit,
-  ChangeDetectorRef,
-  inject,
-  effect,
-  signal,
-  OnChanges,
-  SimpleChanges, Output, EventEmitter, input, output
-} from '@angular/core';
+import {Component, computed, inject, input, OnChanges, OnInit, output, signal, SimpleChanges} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {TableModule} from 'primeng/table';
 import {ButtonModule} from 'primeng/button';
 import {InputTextModule} from 'primeng/inputtext';
-import {Test} from '../../../../models';
+import {Environment, Test} from '../../../../models';
 import {TestService} from '../../../../services/test.service';
 import {MessageService} from 'primeng/api';
 import {HttpStatusCode} from '../../../../models/HttpStatusCode';
+import {PollingService} from '../../../../services/polling.service';
+import {generationState} from '../../../../models/generationState.interface';
+import {Card} from 'primeng/card';
+import {Select} from 'primeng/select';
+import {Dialog} from 'primeng/dialog';
+import {MonacoEditorComponent} from '../monaco-editor/monaco-editor.component';
 
 @Component({
   selector: 'app-test-editor',
@@ -27,7 +23,11 @@ import {HttpStatusCode} from '../../../../models/HttpStatusCode';
     FormsModule,
     TableModule,
     ButtonModule,
-    InputTextModule
+    InputTextModule,
+    Card,
+    Select,
+    Dialog,
+    MonacoEditorComponent
   ],
   templateUrl: './test-editor.html',
   styleUrl: './test-editor.scss'
@@ -38,10 +38,26 @@ export class TestEditor implements OnInit, OnChanges {
 
   private testService = inject(TestService);
   private messageService = inject(MessageService);
+  private pollingService = inject(PollingService);
 
   testSteps = signal<TestStep[]>([]);
   isSaving = signal<boolean>(false);
   isDeleting = signal<boolean>(false);
+  isGenerating = signal<boolean>(false);
+
+  environments = input.required<Environment[]>();
+  selectedEnvironment = signal<Environment | null>(null);
+
+
+  showCodeDialog = signal<boolean>(false);
+  testCode = signal<string>('');
+  isSavingCode = signal<boolean>(false);
+  isLoadingCode = signal<boolean>(false);
+  hasTestFile = signal<boolean>(false);
+
+  isRunningTest = signal<boolean>(false);
+  testStatus = signal<'none' | 'passed' | 'failed'>('none');
+  testResult = signal<any>(null);
 
   cols = [
     {field: 'aktion', header: 'Aktion'},
@@ -51,6 +67,8 @@ export class TestEditor implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.loadTestData();
+    this.isGenerating.set(this.test().generationState === generationState.IN_PROGRESS);
+    this.checkTestFileExists();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -70,6 +88,9 @@ export class TestEditor implements OnInit, OnChanges {
     }
 
     this.testSteps.set(steps);
+    const env = this.environments().find(env => env.id === this.test().environmentID) || null;
+    this.selectedEnvironment.set(env);
+    this.checkTestFileExists();
   }
 
   parseCSV(csv: string): TestStep[] {
@@ -191,6 +212,7 @@ export class TestEditor implements OnInit, OnChanges {
 
     this.isSaving.set(true);
     this.updateTestCSV();
+    this.test().environmentID = this.selectedEnvironment()?.id || undefined;
 
     this.testService.updateTest(this.test().id, this.test()).subscribe({
       next: () => {
@@ -233,5 +255,148 @@ export class TestEditor implements OnInit, OnChanges {
         }
       });
     }
+  }
+
+  generateTest() {
+    this.test().generationState = generationState.IN_PROGRESS;
+    this.isGenerating.set(true);
+    this.pollingService.addTest(this.test());
+    this.testService.generateTest(this.test().id).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Info',
+          detail: 'Testgenerierung gestartet'
+        });
+      },
+      error: (error) => {
+        this.isGenerating.set(false);
+        console.error('Error generating test:', error);
+        this.pollingService.removeTest(this.test());
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fehler',
+          detail: 'Test konnte nicht generiert werden'
+        });
+      }
+    });
+  }
+
+  checkTestFileExists(): void {
+    this.testService.getTestCode(this.test().id).subscribe({
+      next: response => {
+        this.hasTestFile.set(response.status === HttpStatusCode.Ok && !!response.body);
+      },
+      error: () => {
+        this.hasTestFile.set(false);
+      }
+    });
+  }
+
+  openCodeDialog(): void {
+    this.isLoadingCode.set(true);
+    this.showCodeDialog.set(true);
+    this.testCode.set('');
+
+    this.testService.getTestCode(this.test().id).subscribe({
+      next: response => {
+        this.isLoadingCode.set(false);
+        if (response.status === HttpStatusCode.Ok && response.body) {
+          this.testCode.set(response.body.code || '');
+        }
+      },
+      error: err => {
+        this.isLoadingCode.set(false);
+        console.error('Error loading test code:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fehler',
+          detail: 'Test-Code konnte nicht geladen werden'
+        });
+        this.showCodeDialog.set(false);
+      }
+    });
+  }
+
+  saveTestCode(): void {
+    this.isSavingCode.set(true);
+    this.testService.saveTestCode(this.test().id, this.testCode()).subscribe({
+      next: () => {
+        this.isSavingCode.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Erfolg',
+          detail: 'Test-Code erfolgreich gespeichert'
+        });
+        this.showCodeDialog.set(false);
+      },
+      error: err => {
+        this.isSavingCode.set(false);
+        console.error('Error saving test code:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fehler',
+          detail: 'Test-Code konnte nicht gespeichert werden'
+        });
+      }
+    });
+  }
+
+  onCodeChange(code: string): void {
+    this.testCode.set(code);
+  }
+
+  runTest(): void {
+    if (!this.test || !this.test().id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Fehler',
+        detail: 'Test-ID fehlt'
+      });
+      return;
+    }
+
+    this.isRunningTest.set(true);
+    this.testStatus.set('none');
+    this.testResult.set(null);
+
+    this.testService.executeTest(this.test().id).subscribe({
+      next: (response) => {
+        this.isRunningTest.set(false);
+        const testRun = response.body;
+
+        if (testRun) {
+          if (testRun.status === 'PASSED') {
+            this.testStatus.set('passed');
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Test erfolgreich'
+            });
+          } else if (testRun.status === 'FAILED') {
+            this.testStatus.set('failed');
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Test fehlgeschlagen'
+            });
+          } else {
+            this.testStatus.set('none');
+            this.messageService.add({
+              severity: 'info',
+              summary: 'Test Status: ' + testRun.status
+            });
+          }
+        }
+      },
+      error: (error) => {
+        this.isRunningTest.set(false);
+        this.testStatus.set('failed');
+        console.error('Error running test:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fehler',
+          detail: 'Test konnte nicht ausgeführt werden'
+        });
+      }
+    });
   }
 }

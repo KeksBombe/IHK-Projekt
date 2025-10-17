@@ -41,3 +41,25 @@
   }
 }
 
+:host ::ng-deep .rainbow-border {
+  border-image: linear-gradient(
+      90deg,
+      #ff0000,
+      #ff7f00,
+      #ffff00,
+      #00ff00,
+      #0000ff,
+      #4b0082,
+      #9400d3
+  ) 1;
+}
+
+.test-passed {
+  border: 3px solid #22c55e !important;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+}
+
+.test-failed {
+  border: 3px solid #ef4444 !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}

@@ -11,7 +11,11 @@
       "command": "node",
       "args": [
         "./node_modules/@playwright/mcp/cli.js",
-        "--isolated"
+        "--isolated",
+        "--save-trace",
+        "--save-video=1280x720",
+        "--output-dir",
+        "./test-results"
       ]
     }
   }

@@ -1,8 +1,12 @@
 package com.example.backend.models;
 
 
+import com.example.backend.constants.TestStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.List;
+import java.util.Map;
 
 
 @Entity
@@ -28,4 +32,7 @@ public class TestModel
     Long environmentID;
     Long storyID;
 
+    @Enumerated(EnumType.STRING)
+    GenerationState generationState = GenerationState.NOT_STARTED;
 }
+

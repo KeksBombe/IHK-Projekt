@@ -28,8 +28,6 @@ public class TestRun
     Long id;
     TestStatus status;
     String description;
-    URL linkToSkript;
-    LocalDateTime startTime;
 
     //Fremdschlüssel
     Long testID;

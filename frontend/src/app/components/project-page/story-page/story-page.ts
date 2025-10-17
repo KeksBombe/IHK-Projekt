@@ -1,11 +1,11 @@
-import {ChangeDetectorRef, Component, inject, OnInit, signal} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnInit} from '@angular/core';
 import {ActivatedRoute, RouterOutlet} from '@angular/router';
 import {Card} from 'primeng/card';
 import {Button} from 'primeng/button';
 import {DataView} from 'primeng/dataview';
 import {MessageService, PrimeTemplate} from 'primeng/api';
 import {Splitter} from 'primeng/splitter';
-import {Test, UserStory} from '../../../models';
+import {Environment, Test, UserStory} from '../../../models';
 import {UserStoryService} from '../../../services/user-story.service';
 import {TestService} from '../../../services/test.service';
 import {TestItem} from './test-item/test-item';
@@ -16,6 +16,9 @@ import {FormsModule} from '@angular/forms';
 import {TestEditor} from './test-editor/test-editor';
 import {HttpStatusCode} from '../../../models/HttpStatusCode';
 import {Toast} from 'primeng/toast';
+import {generationState} from '../../../models/generationState.interface';
+import {EnvironmentService} from '../../../services/environment.service';
+import {Select} from 'primeng/select';
 
 @Component({
   selector: 'app-story-page',
@@ -33,7 +36,8 @@ import {Toast} from 'primeng/toast';
     InputText,
     FormsModule,
     TestEditor,
-    Toast
+    Toast,
+    Select
   ],
   templateUrl: './story-page.html',
   styleUrl: './story-page.scss'
@@ -44,13 +48,18 @@ class StoryPage implements OnInit {
   private route = inject(ActivatedRoute);
   private userStoryService = inject(UserStoryService);
   private testService = inject(TestService);
+  private envService = inject(EnvironmentService);
   private cdr = inject(ChangeDetectorRef);
   private messageService = inject(MessageService);
+
 
   currentStory: UserStory = {id: -1, name: '', description: '', projectID: -1};
   tests: Test[] = [];
   filteredTests: Test[] = [];
   selectedTest: Test | null = null;
+
+  environments: Environment[] = [];
+  selectedEnvironment: Environment | null = null;
 
   isLoading = true;
   displayDialog = false;
@@ -69,13 +78,10 @@ class StoryPage implements OnInit {
   }
 
   ngOnInit(): void {
-    // Lade User Story Details
-    this.userStoryService.getUserStories(this.projectId).subscribe({
+    this.userStoryService.getUserStoryById(this.storyId).subscribe({
       next: response => {
-        const stories = response.body || [];
-        const story = stories.find(s => s.id === this.storyId);
-        if (story) {
-          this.currentStory = story;
+        if (response.body) {
+          this.currentStory = response.body;
         }
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -86,6 +92,16 @@ class StoryPage implements OnInit {
       }
     });
 
+    this.envService.getEnvironmentsByProjectId(this.projectId).subscribe({
+      next: response => {
+        this.environments = response.body ?? [];
+        console.table(this.environments);
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        console.error('Error loading environments:', err.status, err.message);
+      }
+    })
 
     this.testService.getTestsByUserStoryId(this.storyId).subscribe(response => {
       this.tests = response.body ?? [];
@@ -142,8 +158,9 @@ class StoryPage implements OnInit {
       name: this.newTestName,
       description: this.newTestDescription,
       testCSV: '',
-      environmentID: 0,
-      storyID: this.storyId
+      environmentID: this.selectedEnvironment?.id || undefined,
+      storyID: this.storyId,
+      generationState: generationState.NOT_STARTED
     };
     console.table(newTest);
     this.testService.createTest(newTest).subscribe({
@@ -155,10 +172,21 @@ class StoryPage implements OnInit {
           this.filteredTests = [...this.tests];
           this.newTestName = '';
           this.newTestDescription = '';
+          this.selectedEnvironment = null;
           this.showAddTest = false;
           this.splitterSizes = [30, 70];
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Erfolg',
+            detail: 'Test erfolgreich erstellt'
+          });
           this.cdr.detectChanges();
         } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Fehler',
+            detail: 'Bei der Erstellung des Tests ist ein Fehler aufgetreten'
+          });
           console.error('Failed to create test:', response);
         }
       }

@@ -27,7 +27,7 @@
         <!-- Left Panel: Tests List -->
         <ng-template pTemplate>
           <div class="splitter-panel-content">
-            <section class="content-card">
+            <section class="content-card m-2">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold m-0">Tests</h3>
                 <div class="flex items-center gap-2">
@@ -66,7 +66,7 @@
         <ng-template pTemplate>
           <div class="splitter-panel-content">
             @if (selectedTest) {
-              <section class="content-card">
+              <section class="content-card m-2">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-lg font-semibold m-0">Test Details</h3>
                   <p-button
@@ -78,7 +78,8 @@
                   </p-button>
                 </div>
                 <div class="test-details">
-                  <app-test-editor [test]="selectedTest" (deleteItem)="deleteItem($event)"></app-test-editor>
+                  <app-test-editor [test]="selectedTest" (deleteItem)="deleteItem($event)"
+                                   [environments]="environments"></app-test-editor>
                 </div>
               </section>
             } @else {
@@ -157,6 +158,19 @@
         pInputText
         [(ngModel)]="newTestDescription"
         placeholder="Kurze Beschreibung"/>
+    </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="test-steps">Umgebung</label>
+      <p-select
+        appendTo="body"
+        [options]="environments"
+        [(ngModel)]="selectedEnvironment"
+        placeholder="Umgebung auswählen"
+        [editable]="true"
+        optionLabel="name"
+        class="w-full md:w-56"
+        [showClear]="true"
+      />
     </div>
     <div class="flex justify-end gap-2">
       <button

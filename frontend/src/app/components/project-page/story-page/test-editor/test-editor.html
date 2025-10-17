@@ -1,7 +1,46 @@
 <div class="test-editor">
+  @if (hasTestFile()) {
+    <p-card class="w-full mb-4"
+            [ngClass]="{'test-passed': testStatus() === 'passed', 'test-failed': testStatus() === 'failed'}">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-file-code text-primary-500"></i>
+          <h4 class="text-base font-semibold m-0">Generiertes Test-Skript</h4>
+        </div>
+        <div class="flex gap-2">
+          <p-button
+            label="Test ausführen"
+            icon="pi pi-play"
+            size="small"
+            severity="success"
+            [loading]="isRunningTest()"
+            (onClick)="runTest()">
+          </p-button>
+          <p-button
+            label="Skript anzeigen & bearbeiten"
+            icon="pi pi-code"
+            size="small"
+            (onClick)="openCodeDialog()">
+          </p-button>
+        </div>
+      </div>
+    </p-card>
+  }
+
   <div class="flex items-center justify-between mb-4">
     <h4 class="text-base font-semibold m-0">{{ test().name }}</h4>
     <div class="flex gap-2">
+      <p-button
+        label="Mit KI ausführen"
+        icon="pi pi-microchip-ai"
+        size="small"
+        variant="outlined"
+        severity="help"
+        styleClass="rainbow-border"
+        [loading]="isGenerating()"
+        (onClick)="generateTest()"
+      >
+      </p-button>
       <p-button
         label="Neue Zeile"
         icon="pi pi-plus"
@@ -28,6 +67,25 @@
   @if (test().description) {
     <p class="text-sm text-gray-600 mb-4">{{ test().description }}</p>
   }
+
+  <p-card class="w-full mb-4 bg-(--surface-ground) border-primary-300">
+    <div class="flex items-center gap-100">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-info-circle text-primary-500"></i>
+        <span class="font-semibold">Umgebung:</span>
+      </div>
+      <p-select
+        appendTo="body"
+        [options]="environments()"
+        [(ngModel)]="selectedEnvironment"
+        placeholder="Umgebung auswählen"
+        [editable]="true"
+        optionLabel="name"
+        class="w-full md:w-56"
+        [showClear]="true"
+      />
+    </div>
+  </p-card>
 
   <p-table
     #dt
@@ -102,4 +160,41 @@
       </tr>
     </ng-template>
   </p-table>
+
+  <p-dialog
+    [(visible)]="showCodeDialog"
+    [header]="'Test-Skript bearbeiten: ' + test().name"
+    [focusTrap]="true"
+    [modal]="true"
+    [draggable]="false"
+    [maximizable]="true"
+    [style]="{width: '80vw', height: '80vh'}"
+    [contentStyle]="{padding: '0', height: 'calc(80vh - 150px)'}">
+    @if (isLoadingCode()) {
+      <div class="flex items-center justify-center h-full">
+        <i class="pi pi-spin pi-spinner text-4xl text-primary-500"></i>
+      </div>
+    } @else {
+      <app-monaco-editor
+        [code]="testCode()"
+        [language]="'typescript'"
+        (codeChange)="onCodeChange($event)">
+      </app-monaco-editor>
+    }
+    <ng-template pTemplate="footer">
+      <p-button
+        label="Abbrechen"
+        icon="pi pi-times"
+        (onClick)="showCodeDialog.set(false)"
+        [text]="true"
+        [disabled]="isSavingCode()">
+      </p-button>
+      <p-button
+        label="Speichern"
+        icon="pi pi-check"
+        (onClick)="saveTestCode()"
+        [loading]="isSavingCode()">
+      </p-button>
+    </ng-template>
+  </p-dialog>
 </div>

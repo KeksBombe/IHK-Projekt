@@ -18,6 +18,11 @@ export class TestService {
     return this.http.get<Test[]>(`${this.backendUrl}/getTests/${userStoryId}`, {observe: 'response'});
   }
 
+  /** Get a test by its ID */
+  getTestById(id: number): Observable<HttpResponse<Test>> {
+    return this.http.get<Test>(`${this.backendUrl}/test/${id}`, {observe: 'response'});
+  }
+
   /** Create a new test */
   createTest(test: Test): Observable<HttpResponse<Test>> {
     return this.http.post<Test>(`${this.backendUrl}/test`, test, {
@@ -37,5 +42,32 @@ export class TestService {
   /** Delete a test by its ID */
   deleteTest(id: number): Observable<HttpResponse<void>> {
     return this.http.delete<void>(`${this.backendUrl}/test/${id}`, {observe: 'response'});
+  }
+
+  /** Trigger test generation for a given test ID */
+  generateTest(id: number) {
+    return this.http.post<void>(`${this.backendUrl}/generate/${id}`, {}, {observe: 'response'});
+  }
+
+  /** Get the generated test code for a given test ID */
+  getTestCode(id: number): Observable<HttpResponse<any>> {
+    return this.http.get(`${this.backendUrl}/test/code/${id}`, {observe: 'response'});
+  }
+
+  /** Save the test code for a given test ID */
+  saveTestCode(id: number, code: string): Observable<HttpResponse<string>> {
+    return this.http.put(`${this.backendUrl}/test/code/${id}`, {testID: id, code: code}, {
+      headers: new HttpHeaders({'Content-Type': 'application/json'}),
+      observe: 'response',
+      responseType: 'text'
+    });
+  }
+
+  /** Execute Playwright test for a given test ID */
+  executeTest(id: number): Observable<HttpResponse<any>> {
+    return this.http.post(`${this.backendUrl}/test/execute/${id}`, {}, {
+      headers: new HttpHeaders({'Content-Type': 'application/json'}),
+      observe: 'response'
+    });
   }
 }

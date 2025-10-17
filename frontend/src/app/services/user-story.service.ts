@@ -24,6 +24,16 @@ export class UserStoryService {
     );
   }
 
+  getUserStoryById(id: number): Observable<HttpResponse<UserStory>> {
+    return this.http.get<UserStory>(
+      `${this.backendUrl}/userStory/${id}`,
+      {
+        headers: new HttpHeaders({'Content-Type': 'application/json'}),
+        observe: 'response'
+      }
+    );
+  }
+
   /** Create a new user story */
   createUserStory(userStory: UserStory): Observable<HttpResponse<UserStory>> {
     return this.http.post<UserStory>(
