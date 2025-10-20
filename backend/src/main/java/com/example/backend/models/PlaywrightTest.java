@@ -8,5 +8,5 @@ import lombok.Data;
 public class PlaywrightTest
 {
     private Long testID;
-    private String Code;
+    private String code;
 }

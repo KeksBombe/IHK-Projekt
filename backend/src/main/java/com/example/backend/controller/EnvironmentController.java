@@ -36,7 +36,7 @@ public class EnvironmentController
         maskedEnv.setUrl(env.getUrl());
         maskedEnv.setUsername(env.getUsername());
         maskedEnv.setPassword(MASKED_PASSWORD);
-        maskedEnv.setProjectID(env.getProjectID());
+        maskedEnv.setProject(env.getProject());
         return maskedEnv;
     }
 

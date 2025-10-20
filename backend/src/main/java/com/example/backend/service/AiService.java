@@ -5,7 +5,6 @@ import com.example.backend.exceptions.GenerationException;
 import com.example.backend.models.Environment;
 import com.example.backend.models.GenerationState;
 import com.example.backend.models.TestModel;
-import com.example.backend.repo.EnvironmentRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -18,15 +17,12 @@ public class AiService
 {
 
     private final ChatClient chatClient;
-    private final EnvironmentRepo envRepository;
 
-    public AiService (ChatClient.Builder builder, ToolCallbackProvider tools, EnvironmentRepo envRepository)
+    public AiService (ChatClient.Builder builder, ToolCallbackProvider tools)
     {
         this.chatClient = builder
                 .defaultToolCallbacks(tools)
                 .build();
-
-        this.envRepository = envRepository;
     }
 
     /**
@@ -44,13 +40,10 @@ public class AiService
             String testStepsCSV = test.getTestCSV();
             Environment testEnv = null;
             boolean hasEnv = false;
-            if (test.getEnvironmentID() != null)
+            if (test.getEnvironment() != null)
             {
-                if (envRepository.findById(test.getEnvironmentID()).isPresent())
-                {
-                    testEnv = envRepository.findById(test.getEnvironmentID()).get();
-                    hasEnv = true;
-                }
+                testEnv = test.getEnvironment();
+                hasEnv = true;
             }
 
             if (testStepsCSV == null || testStepsCSV.trim().isEmpty())

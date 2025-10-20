@@ -2,14 +2,10 @@ package com.example.backend.models;
 
 
 import com.example.backend.constants.TestStatus;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
 import lombok.Data;
-
-import java.net.URL;
-import java.time.LocalDateTime;
 
 
 @Entity
@@ -30,6 +26,27 @@ public class TestRun
     String description;
 
     //Fremdschlüssel
-    Long testID;
+    @ManyToOne
+    @JoinColumn(name = "testid", referencedColumnName = "id")
+    @JsonIgnore
+    TestModel test;
+
+    // JSON serialization compatibility
+    @JsonProperty("testId")
+    public Long getTestId ()
+    {
+        return test != null ? test.getId() : null;
+    }
+
+    @JsonProperty("testId")
+    public void setTestId (Long testId)
+    {
+        if (testId != null)
+        {
+            TestModel t = new TestModel();
+            t.setId(testId);
+            this.test = t;
+        }
+    }
 
 }

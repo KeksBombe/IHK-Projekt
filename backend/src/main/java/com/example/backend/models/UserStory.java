@@ -1,10 +1,9 @@
 package com.example.backend.models;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
 import lombok.Data;
 
 
@@ -26,6 +25,27 @@ public class UserStory
     String description;
 
     //Fremdschlüssel
-    Long projectID;
+    @ManyToOne
+    @JoinColumn(name = "projectid", referencedColumnName = "id")
+    @JsonIgnore
+    Project project;
+
+    // JSON serialization compatibility
+    @JsonProperty("projectID")
+    public Long getProjectID ()
+    {
+        return project != null ? project.getId() : null;
+    }
+
+    @JsonProperty("projectID")
+    public void setProjectID (Long projectID)
+    {
+        if (projectID != null)
+        {
+            Project p = new Project();
+            p.setId(projectID);
+            this.project = p;
+        }
+    }
 
 }

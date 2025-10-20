@@ -1,4 +1,4 @@
 export interface PlaywrightTest {
   testID: number;
-  Code: string;
+  code: string;
 }

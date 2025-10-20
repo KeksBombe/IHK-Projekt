@@ -12,5 +12,6 @@ import java.util.List;
 @Repository
 public interface UserStoryRepo extends JpaRepository<UserStory, Long>
 {
+    @Query("SELECT u FROM UserStory u WHERE u.project.id = ?1")
     List<UserStory> findByProjectID (Long projectId);
 }
