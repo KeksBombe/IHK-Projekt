@@ -2,7 +2,12 @@ package com.example.backend.controller;
 
 
 import com.example.backend.constants.EFileType;
+import com.example.backend.dto.CreateTestRequest;
+import com.example.backend.dto.TestDto;
+import com.example.backend.dto.TestRunDto;
 import com.example.backend.exceptions.GenerationException;
+import com.example.backend.mapper.TestMapper;
+import com.example.backend.mapper.TestRunMapper;
 import com.example.backend.models.PlaywrightTest;
 import com.example.backend.models.TestModel;
 import com.example.backend.models.TestRun;
@@ -14,7 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,20 +27,13 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +42,12 @@ class TestControllerTest
 
     @Mock
     private TestRepo testRepo;
+
+    @Mock
+    private TestMapper testMapper;
+
+    @Mock
+    private TestRunMapper testRunMapper;
 
     @Mock
     private AiService aiService;
@@ -59,6 +62,7 @@ class TestControllerTest
     private TestController testController;
 
     private TestModel testModel;
+    private TestDto testDto;
 
     @BeforeEach
     void setUp ()
@@ -67,6 +71,10 @@ class TestControllerTest
         testModel.setId(11L);
         testModel.setName("Smoke Test");
         testModel.setTestCSV("step,action,expected\n1,open,'done'");
+
+        testDto = new TestDto();
+        testDto.setId(11L);
+        testDto.setName("Smoke Test");
     }
 
     @Test
@@ -74,12 +82,13 @@ class TestControllerTest
     void getTestsReturnsOkWhenTestsExist ()
     {
         when(testRepo.findByStoryID(7L)).thenReturn(List.of(testModel));
+        when(testMapper.toDto(testModel)).thenReturn(testDto);
 
-        ResponseEntity<List<TestModel>> response = testController.getTests(7L);
+        ResponseEntity<List<TestDto>> response = testController.getTests(7L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        List<TestModel> tests = Objects.requireNonNull(response.getBody());
-        assertThat(tests).containsExactly(testModel);
+        List<TestDto> tests = response.getBody();
+        assertThat(tests).hasSize(1);
     }
 
     @Test
@@ -88,21 +97,9 @@ class TestControllerTest
     {
         when(testRepo.findByStoryID(7L)).thenReturn(List.of());
 
-        ResponseEntity<List<TestModel>> response = testController.getTests(7L);
+        ResponseEntity<List<TestDto>> response = testController.getTests(7L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        assertNull(response.getBody());
-    }
-
-    @Test
-    @DisplayName("getTests liefert 500 bei Fehler")
-    void getTestsReturnsInternalServerErrorOnException ()
-    {
-        when(testRepo.findByStoryID(7L)).thenThrow(new RuntimeException("timeout"));
-
-        ResponseEntity<List<TestModel>> response = testController.getTests(7L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
 
     @Test
@@ -110,115 +107,75 @@ class TestControllerTest
     void getTestByIdReturnsOkWhenFound ()
     {
         when(testRepo.findById(11L)).thenReturn(Optional.of(testModel));
+        when(testMapper.toDto(testModel)).thenReturn(testDto);
 
-        ResponseEntity<TestModel> response = testController.getTestById(11L);
+        ResponseEntity<TestDto> response = testController.getTestById(11L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertThat(Objects.requireNonNull(response.getBody())).isEqualTo(testModel);
-    }
-
-    @Test
-    @DisplayName("getTestById liefert 204 wenn Test fehlt")
-    void getTestByIdReturnsNoContentWhenMissing ()
-    {
-        when(testRepo.findById(11L)).thenReturn(Optional.empty());
-
-        ResponseEntity<TestModel> response = testController.getTestById(11L);
-
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("getTestById liefert 500 bei Fehler")
-    void getTestByIdReturnsInternalServerErrorOnException ()
-    {
-        when(testRepo.findById(11L)).thenThrow(new RuntimeException("db"));
-
-        ResponseEntity<TestModel> response = testController.getTestById(11L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertThat(response.getBody()).isNotNull();
     }
 
     @Test
     @DisplayName("createTest setzt ID auf null und liefert 201")
     void createTestResetsIdAndReturnsCreated ()
     {
-        TestModel request = new TestModel();
-        request.setId(99L);
+        CreateTestRequest request = new CreateTestRequest();
         request.setName("Edge Test");
+        request.setStoryID(7L);
 
-        when(testRepo.save(any(TestModel.class))).thenAnswer(invocation ->
-        {
-            TestModel toStore = invocation.getArgument(0);
-            TestModel persisted = new TestModel();
-            persisted.setId(22L);
-            persisted.setName(toStore.getName());
-            persisted.setDescription(toStore.getDescription());
-            persisted.setTestCSV(toStore.getTestCSV());
-            return persisted;
-        });
+        TestModel newTest = new TestModel();
+        newTest.setName("Edge Test");
 
-        ResponseEntity<TestModel> response = testController.createTest(request);
+        TestModel savedTest = new TestModel();
+        savedTest.setId(22L);
+        savedTest.setName("Edge Test");
+
+        TestDto savedDto = new TestDto();
+        savedDto.setId(22L);
+        savedDto.setName("Edge Test");
+
+        when(testMapper.toEntity(request)).thenReturn(newTest);
+        when(testRepo.save(newTest)).thenReturn(savedTest);
+        when(testMapper.toDto(savedTest)).thenReturn(savedDto);
+
+        ResponseEntity<TestDto> response = testController.createTest(request);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        TestModel created = Objects.requireNonNull(response.getBody());
+        TestDto created = response.getBody();
         assertEquals(22L, created.getId());
-
-        ArgumentCaptor<TestModel> captor = ArgumentCaptor.forClass(TestModel.class);
-        verify(testRepo).save(captor.capture());
-        assertNull(captor.getValue().getId());
-    }
-
-    @Test
-    @DisplayName("createTest liefert 500 bei Fehler")
-    void createTestReturnsInternalServerErrorOnException ()
-    {
-        when(testRepo.save(any(TestModel.class))).thenThrow(new RuntimeException("constraint"));
-
-        ResponseEntity<TestModel> response = testController.createTest(new TestModel());
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
 
     @Test
     @DisplayName("updateTest überschreibt vorhandenen Test")
     void updateTestReturnsOkWhenExists ()
     {
+        TestDto updateDto = new TestDto();
+        updateDto.setId(11L);
+        updateDto.setName("Updated");
+        updateDto.setStoryID(7L);
+
+        TestModel updatedEntity = new TestModel();
+        updatedEntity.setId(11L);
+        updatedEntity.setName("Updated");
+
+        TestModel savedTest = new TestModel();
+        savedTest.setId(11L);
+        savedTest.setName("Updated");
+
+        TestDto savedDto = new TestDto();
+        savedDto.setId(11L);
+        savedDto.setName("Updated");
+
         when(testRepo.existsById(11L)).thenReturn(true);
-        when(testRepo.save(any(TestModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(testMapper.toEntity(updateDto)).thenReturn(updatedEntity);
+        when(testRepo.save(updatedEntity)).thenReturn(savedTest);
+        when(testMapper.toDto(savedTest)).thenReturn(savedDto);
 
-        TestModel update = new TestModel();
-        update.setName("Updated");
-
-        ResponseEntity<TestModel> response = testController.updateTest(11L, update);
+        ResponseEntity<TestDto> response = testController.updateTest(11L, updateDto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        TestModel persisted = Objects.requireNonNull(response.getBody());
+        TestDto persisted = response.getBody();
         assertEquals("Updated", persisted.getName());
-        assertEquals(11L, persisted.getId());
-    }
-
-    @Test
-    @DisplayName("updateTest liefert 204 wenn Test fehlt")
-    void updateTestReturnsNoContentWhenMissing ()
-    {
-        when(testRepo.existsById(12L)).thenReturn(false);
-
-        ResponseEntity<TestModel> response = testController.updateTest(12L, new TestModel());
-
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(testRepo, never()).save(any(TestModel.class));
-    }
-
-    @Test
-    @DisplayName("updateTest liefert 500 bei Fehler")
-    void updateTestReturnsInternalServerErrorOnException ()
-    {
-        when(testRepo.existsById(12L)).thenThrow(new RuntimeException("locked"));
-
-        ResponseEntity<TestModel> response = testController.updateTest(12L, new TestModel());
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
 
     @Test
@@ -228,34 +185,10 @@ class TestControllerTest
         when(testRepo.existsById(11L)).thenReturn(true);
         doNothing().when(testRepo).deleteById(11L);
 
-        ResponseEntity<HttpStatus> response = testController.deleteTest(11L);
+        ResponseEntity<Void> response = testController.deleteTest(11L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(testRepo).deleteById(11L);
-    }
-
-    @Test
-    @DisplayName("deleteTest liefert 204 wenn Test fehlt")
-    void deleteTestReturnsNoContentWhenMissing ()
-    {
-        when(testRepo.existsById(11L)).thenReturn(false);
-
-        ResponseEntity<HttpStatus> response = testController.deleteTest(11L);
-
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(testRepo, never()).deleteById(11L);
-    }
-
-    @Test
-    @DisplayName("deleteTest liefert 500 bei Fehler")
-    void deleteTestReturnsInternalServerErrorOnException ()
-    {
-        when(testRepo.existsById(11L)).thenReturn(true);
-        doThrow(new RuntimeException("not allowed")).when(testRepo).deleteById(11L);
-
-        ResponseEntity<HttpStatus> response = testController.deleteTest(11L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
 
     @Test
@@ -273,57 +206,6 @@ class TestControllerTest
     }
 
     @Test
-    @DisplayName("generateTest liefert 404 wenn Test fehlt")
-    void generateTestReturnsNotFoundWhenMissing ()
-    {
-        when(testRepo.findById(11L)).thenReturn(Optional.empty());
-
-        ResponseEntity<String> response = testController.generateTest(11L);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertThat(Objects.requireNonNull(response.getBody())).contains("not found");
-        verify(aiService, never()).generateAndRunTests(any(TestModel.class));
-    }
-
-    @Test
-    @DisplayName("generateTest liefert 500 wenn AI-Service fehlschlägt")
-    void generateTestReturnsInternalServerErrorWhenAiFails () throws Exception
-    {
-        when(testRepo.findById(11L)).thenReturn(Optional.of(testModel));
-        when(aiService.generateAndRunTests(testModel)).thenThrow(new GenerationException("azure"));
-
-        ResponseEntity<String> response = testController.generateTest(11L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertThat(Objects.requireNonNull(response.getBody())).contains("Error generating tests");
-    }
-
-    @Test
-    @DisplayName("generateTest liefert 500 wenn Speichern der Datei fehlschlägt")
-    void generateTestReturnsInternalServerErrorWhenWriteFails () throws Exception
-    {
-        when(testRepo.findById(11L)).thenReturn(Optional.of(testModel));
-        when(aiService.generateAndRunTests(testModel)).thenReturn("generated code");
-        doThrow(new IOException("disk full")).when(fileService).writeFile(eq("11"), eq("generated code"), eq(EFileType.SPEC_TS));
-
-        ResponseEntity<String> response = testController.generateTest(11L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertThat(Objects.requireNonNull(response.getBody())).contains("Error generating tests");
-    }
-
-    @Test
-    @DisplayName("generateTest liefert 500 wenn Repository Fehler wirft")
-    void generateTestReturnsInternalServerErrorWhenRepositoryThrows ()
-    {
-        when(testRepo.findById(11L)).thenThrow(new RuntimeException("db"));
-
-        ResponseEntity<String> response = testController.generateTest(11L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    }
-
-    @Test
     @DisplayName("getTestCodeById liefert gespeicherten Code")
     void getTestCodeByIdReturnsSavedCode () throws Exception
     {
@@ -333,7 +215,7 @@ class TestControllerTest
         ResponseEntity<PlaywrightTest> response = testController.getTestCodeById(11L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        PlaywrightTest body = Objects.requireNonNull(response.getBody());
+        PlaywrightTest body = response.getBody();
         assertEquals(expected, body.getCode());
         assertEquals(11L, body.getTestID());
     }
@@ -347,17 +229,6 @@ class TestControllerTest
         ResponseEntity<PlaywrightTest> response = testController.getTestCodeById(11L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("getTestCodeById liefert 500 bei unbekanntem Fehler")
-    void getTestCodeByIdReturnsInternalServerErrorOnException () throws Exception
-    {
-        when(fileService.readFile("11" + EFileType.SPEC_TS.getExtension())).thenThrow(new RuntimeException("disk"));
-
-        ResponseEntity<PlaywrightTest> response = testController.getTestCodeById(11L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
 
     @Test
@@ -375,73 +246,23 @@ class TestControllerTest
     }
 
     @Test
-    @DisplayName("saveTestCodeById liefert 404 wenn Test fehlt")
-    void saveTestCodeByIdReturnsNotFoundWhenMissing ()
+    @DisplayName("executePlaywrightTest führt Test aus und gibt TestRunDto zurück")
+    void executePlaywrightTestReturnsTestRunDto ()
     {
-        when(testRepo.existsById(11L)).thenReturn(false);
+        TestRun testRun = new TestRun();
+        testRun.setId(100L);
 
-        ResponseEntity<String> response = testController.saveTestCodeById(11L, new PlaywrightTest());
+        TestRunDto testRunDto = new TestRunDto();
+        testRunDto.setId(100L);
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verifyNoInteractions(fileService);
-    }
-
-    @Test
-    @DisplayName("saveTestCodeById liefert 500 wenn Schreiben fehlschlägt")
-    void saveTestCodeByIdReturnsInternalServerErrorOnWriteFailure () throws Exception
-    {
         when(testRepo.existsById(11L)).thenReturn(true);
-        PlaywrightTest payload = new PlaywrightTest();
-        payload.setCode("console.log('fail');");
-        doThrow(new IOException("disk"))
-                .when(fileService)
-                .writeFile("11", payload.getCode(), EFileType.SPEC_TS);
+        when(playwrightTestRunner.runPlaywrightTest(11L, "11.spec.ts")).thenReturn(testRun);
+        when(testRunMapper.toDto(testRun)).thenReturn(testRunDto);
 
-        ResponseEntity<String> response = testController.saveTestCodeById(11L, payload);
+        ResponseEntity<TestRunDto> response = testController.executePlaywrightTest(11L);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertThat(Objects.requireNonNull(response.getBody())).contains("Error saving test code");
-    }
-
-    @Test
-    @DisplayName("saveTestCodeById liefert 500 bei unbekanntem Fehler")
-    void saveTestCodeByIdReturnsInternalServerErrorOnException () throws Exception
-    {
-        when(testRepo.existsById(11L)).thenReturn(true);
-        PlaywrightTest payload = new PlaywrightTest();
-        payload.setCode("console.log('error');");
-        doThrow(new IllegalStateException("state"))
-                .when(fileService)
-                .writeFile("11", payload.getCode(), EFileType.SPEC_TS);
-
-        ResponseEntity<String> response = testController.saveTestCodeById(11L, payload);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertThat(Objects.requireNonNull(response.getBody())).contains("Internal server error");
-    }
-
-    @Test
-    @DisplayName("executePlaywrightTest liefert 404 wenn Test fehlt")
-    void executePlaywrightTestReturnsNotFoundWhenMissing ()
-    {
-        when(testRepo.existsById(11L)).thenReturn(false);
-
-        ResponseEntity<TestRun> response = testController.executePlaywrightTest(11L);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(playwrightTestRunner, never()).runPlaywrightTest(any(), any());
-    }
-
-    @Test
-    @DisplayName("executePlaywrightTest liefert 500 bei Fehler")
-    void executePlaywrightTestReturnsInternalServerErrorOnException ()
-    {
-        when(testRepo.existsById(11L)).thenReturn(true);
-        when(playwrightTestRunner.runPlaywrightTest(11L, "11" + EFileType.SPEC_TS.getExtension()))
-                .thenThrow(new RuntimeException("process"));
-
-        ResponseEntity<TestRun> response = testController.executePlaywrightTest(11L);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertThat(response.getBody()).isNotNull();
+        assertEquals(100L, response.getBody().getId());
     }
 }

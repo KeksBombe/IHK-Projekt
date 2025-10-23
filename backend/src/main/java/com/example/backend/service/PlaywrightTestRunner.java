@@ -40,17 +40,15 @@ public class PlaywrightTestRunner
 
     public TestRun runPlaywrightTest (Long testId, String testFileName)
     {
-        // Fetch TestModel from repository
         TestModel testModel = testRepository.findById(testId)
                 .orElseThrow(() -> new RuntimeException("Test with ID " + testId + " not found"));
 
-        // Create and immediately save TestRun with PENDING status
         TestRun testRun = new TestRun();
         testRun.setTest(testModel);
         testRun.setStatus(TestStatus.PENDING);
         testRun.setExecutedAt(LocalDateTime.now());
         testRun.setDescription("Test execution in progress...");
-        testRun = testRunRepository.save(testRun); // Save immediately
+        testRun = testRunRepository.save(testRun);
 
         log.info("Created TestRun with ID {} and PENDING status", testRun.getId());
 
@@ -78,7 +76,6 @@ public class PlaywrightTestRunner
                 }
             }
 
-            // Wait for process to complete with timeout
             boolean finished = process.waitFor(TIMEOUT_MINUTES, TimeUnit.MINUTES);
 
             if (!finished)
@@ -86,13 +83,12 @@ public class PlaywrightTestRunner
                 process.destroyForcibly();
                 testRun.setStatus(TestStatus.FAILED);
                 testRun.setDescription("Test execution timeout after " + TIMEOUT_MINUTES + " minutes\n" + output.toString());
-                return testRunRepository.save(testRun); // Update the existing run
+                return testRunRepository.save(testRun);
             }
 
             int exitCode = process.exitValue();
             String fullOutput = output.toString();
 
-            // Parse JSON output to determine test status
             parseTestResults(testRun, fullOutput, exitCode);
 
         } catch (Exception e)
@@ -102,7 +98,7 @@ public class PlaywrightTestRunner
             testRun.setDescription("Error: " + e.getMessage());
         }
 
-        return testRunRepository.save(testRun); // Update the existing run
+        return testRunRepository.save(testRun);
     }
 
 
