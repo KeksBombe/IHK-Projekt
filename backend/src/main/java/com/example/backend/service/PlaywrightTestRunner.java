@@ -82,7 +82,7 @@ public class PlaywrightTestRunner
             {
                 process.destroyForcibly();
                 testRun.setStatus(TestStatus.FAILED);
-                testRun.setDescription("Test execution timeout after " + TIMEOUT_MINUTES + " minutes\n" + output.toString());
+                testRun.setDescription("Test execution timeout after " + TIMEOUT_MINUTES + " minutes\n" + output);
                 return testRunRepository.save(testRun);
             }
 
@@ -165,6 +165,11 @@ public class PlaywrightTestRunner
                     testRun.setStatus(TestStatus.SKIPPED);
                     testRun.setDescription("No tests were executed");
                 }
+            } else
+            {
+                log.error("No JSON test results found in output");
+                testRun.setStatus(TestStatus.FAILED);
+                testRun.setDescription("Test failed with exit code: " + exitCode);
             }
         } catch (Exception e)
         {

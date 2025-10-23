@@ -172,7 +172,7 @@ public class TestController
             throw new ResourceNotFoundException("Test", id);
         }
 
-        String testFileName = id.toString() + ".spec.ts";
+        String testFileName = id + ".spec.ts";
         log.info("Executing Playwright test: {}", testFileName);
 
         TestRun testRun = playwrightTestRunner.runPlaywrightTest(id, testFileName);
