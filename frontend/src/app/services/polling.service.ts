@@ -69,7 +69,7 @@ export class PollingService implements OnDestroy {
 
     const testPolls$ = tests.map(test => this.fetchAndUpdateTest(test.id));
     return forkJoin(testPolls$).pipe(
-      catchError(err => {
+      catchError(() => {
         return of(null);
       })
     );
@@ -89,7 +89,7 @@ export class PollingService implements OnDestroy {
         }
         return of(null);
       }),
-      catchError(err => of(null))
+      catchError(() => of(null))
     )
   }
 

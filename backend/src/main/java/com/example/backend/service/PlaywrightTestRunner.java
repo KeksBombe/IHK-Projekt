@@ -128,7 +128,7 @@ public class PlaywrightTestRunner
     {
         try
         {
-            Pattern jsonPattern = Pattern.compile("\\{[\\s\\S]*\"stats\"[\\s\\S]*\\}");
+            Pattern jsonPattern = Pattern.compile("\\{[\\s\\S]*\"stats\"[\\s\\S]*}");
             Matcher matcher = jsonPattern.matcher(output);
 
             if (matcher.find())

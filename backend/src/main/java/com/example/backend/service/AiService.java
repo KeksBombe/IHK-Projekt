@@ -25,18 +25,11 @@ public class AiService
                 .build();
     }
 
-    /**
-     * Generates and executes Playwright tests based on test steps
-     *
-     * @param test The test model containing test steps in CSV format
-     * @return The response from the AI agent
-     */
     public String generateAndRunTests (TestModel test) throws GenerationException
     {
         try
         {
             test.setGenerationState(GenerationState.IN_PROGRESS);
-            // Get the CSV directly from the test model
             String testStepsCSV = test.getTestCSV();
             Environment testEnv = null;
             boolean hasEnv = false;
@@ -91,7 +84,6 @@ public class AiService
 
             log.info("Generating with UserPrompt:\n{}", userMessage);
 
-            // Call the AI with MCP tools
             String response = chatClient.prompt()
                     .system(systemPrompt)
                     .user(userMessage.toString())
