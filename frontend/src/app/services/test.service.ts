@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders, HttpResponse} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {Test} from '../models';
+import {Test, TestRun} from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -64,8 +64,8 @@ export class TestService {
   }
 
   /** Execute Playwright test for a given test ID */
-  executeTest(id: number): Observable<HttpResponse<any>> {
-    return this.http.post(`${this.backendUrl}/test/execute/${id}`, {}, {
+  executeTest(id: number): Observable<HttpResponse<TestRun>> {
+    return this.http.post<TestRun>(`${this.backendUrl}/test/execute/${id}`, {}, {
       headers: new HttpHeaders({'Content-Type': 'application/json'}),
       observe: 'response'
     });

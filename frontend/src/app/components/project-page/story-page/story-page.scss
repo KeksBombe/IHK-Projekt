@@ -17,6 +17,21 @@
     }
   }
 
+  .file-preview {
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .file-preview .file-name {
+    display: inline-block;
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .main-content {
     flex: 1;
     padding: 1rem 2rem 1rem;

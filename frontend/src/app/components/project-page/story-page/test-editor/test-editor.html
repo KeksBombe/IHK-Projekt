@@ -17,12 +17,29 @@
             (onClick)="runTest()">
           </p-button>
           <p-button
+            label="Testläufe"
+            icon="pi pi-clock"
+            size="small"
+            severity="info"
+            [loading]="isLoadingTestRuns()"
+            (onClick)="openTestRunsDrawer()">
+          </p-button>
+          <p-button
             label="Skript anzeigen & bearbeiten"
             icon="pi pi-code"
             size="small"
             (onClick)="openCodeDialog()">
           </p-button>
         </div>
+      </div>
+      <div class="mt-3 text-sm text-gray-600">
+        @if (testResult()) {
+          <span class="font-semibold">Letzter Lauf:</span>
+          <span class="ml-1">{{ testResult()?.executedAt | date:'short' }}</span>
+          <div class="mt-1 text-gray-500">{{ testResult()?.description }}</div>
+        } @else {
+          <span class="text-gray-500">Für diesen Test liegen noch keine Ausführungen vor.</span>
+        }
       </div>
     </p-card>
   }
@@ -160,6 +177,42 @@
       </tr>
     </ng-template>
   </p-table>
+
+  <p-drawer
+    [(visible)]="showTestRunsDrawer"
+    [position]="'right'"
+    [modal]="true"
+    [dismissible]="true"
+    [style]="{width: '24rem'}"
+    header="Testläufe">
+    <div class="test-run-drawer p-4">
+      @if (isLoadingTestRuns()) {
+        <div class="flex items-center justify-center py-10">
+          <i class="pi pi-spin pi-spinner text-3xl text-primary-500"></i>
+        </div>
+      } @else if (testRuns().length === 0) {
+        <div class="flex flex-col items-center justify-center gap-3 py-10 text-center text-gray-500">
+          <i class="pi pi-history text-3xl"></i>
+          <span>Keine Testläufe vorhanden.</span>
+        </div>
+      } @else {
+        <div class="flex flex-col gap-3">
+          @for (run of testRuns(); track run.id) {
+            <div class="test-run-card" [ngClass]="{
+              'test-run-card--passed': run.status === testStatusEnum.PASSED,
+              'test-run-card--failed': run.status === testStatusEnum.FAILED
+            }">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold">{{ run.status }}</span>
+                <span class="text-xs text-gray-500">{{ run.executedAt | date:'short' }}</span>
+              </div>
+              <p class="mt-2 text-sm text-gray-600">{{ run.description }}</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </p-drawer>
 
   <p-dialog
     [(visible)]="showCodeDialog"

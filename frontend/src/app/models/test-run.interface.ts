@@ -4,6 +4,7 @@ export interface TestRun {
   id: number;
   status: TestStatus;
   description: string;
-  testJson: string;
+  testJson?: string;
   testId: number;
+  executedAt: string;
 }

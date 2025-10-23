@@ -56,9 +56,4 @@ public class FileService implements IFileService
         }
         return Files.readString(file, StandardCharsets.UTF_8);
     }
-
-    public Path getFilePath (String fileName, EFileType fileType)
-    {
-        return BASE_PATH.resolve(fileName + fileType.getExtension());
-    }
 }

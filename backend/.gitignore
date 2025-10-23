@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Test Reports ###
+test-reports/
+test-results/
+backend/playwright_tests/

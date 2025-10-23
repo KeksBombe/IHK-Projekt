@@ -140,7 +140,8 @@
     header="Neuen Test hinzufügen"
     [(visible)]="showAddTest"
     [modal]="true"
-    [style]="{width: '480px'}">
+    [style]="{width: '480px'}"
+    (onHide)="clearUploadedCsv()">
     <div class="flex flex-col gap-1 mb-3">
       <label for="test-name">Name</label>
       <input
@@ -172,11 +173,48 @@
         [showClear]="true"
       />
     </div>
+    <div class="flex flex-col gap-1 mb-3">
+      <label for="test-csv">Testschritte hochladen</label>
+      <div class="flex flex-wrap items-center gap-2">
+        <input
+          #csvInput
+          id="test-csv"
+          type="file"
+          class="hidden"
+          accept=".csv,text/csv"
+          (change)="onCsvSelected($event)"/>
+        <p-button
+          label="Datei auswählen"
+          icon="pi pi-upload"
+          type="button"
+          [disabled]="!!uploadedCsvName"
+          (onClick)="csvInput.click()">
+        </p-button>
+        @if (uploadedCsvName) {
+          <div class="file-preview flex items-center gap-1">
+            <i class="pi pi-file text-primary-500"></i>
+            <span class="file-name text-sm truncate">{{ uploadedCsvName }}</span>
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              [text]="true"
+              size="small"
+              severity="danger"
+              type="button"
+              (onClick)="clearUploadedCsv()">
+            </p-button>
+          </div>
+        }
+      </div>
+      @if (csvError) {
+        <small class="text-red-500">{{ csvError }}</small>
+      }
+    </div>
     <div class="flex justify-end gap-2">
       <button
         type="button"
         class="p-button p-component p-button-text"
-        (click)="showAddTest = false">
+        (click)="onCancelAddTest()">
         Abbrechen
       </button>
       <button

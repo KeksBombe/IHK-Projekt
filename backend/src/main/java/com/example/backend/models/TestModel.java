@@ -17,7 +17,6 @@ public class TestModel
 
     }
 
-    //Attribute
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;

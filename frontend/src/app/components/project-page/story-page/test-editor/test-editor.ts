@@ -1,11 +1,13 @@
-import {Component, computed, inject, input, OnChanges, OnInit, output, signal, SimpleChanges} from '@angular/core';
-import {CommonModule} from '@angular/common';
+import {Component, inject, input, OnChanges, OnInit, output, signal, SimpleChanges} from '@angular/core';
+import {CommonModule, DatePipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
+import {HttpResponse} from '@angular/common/http';
 import {TableModule} from 'primeng/table';
 import {ButtonModule} from 'primeng/button';
 import {InputTextModule} from 'primeng/inputtext';
-import {Environment, Test} from '../../../../models';
+import {Environment, Test, TestRun, TestStatus} from '../../../../models';
 import {TestService} from '../../../../services/test.service';
+import {TestRunService} from '../../../../services/test-run.service';
 import {MessageService} from 'primeng/api';
 import {HttpStatusCode} from '../../../../models/HttpStatusCode';
 import {PollingService} from '../../../../services/polling.service';
@@ -13,7 +15,15 @@ import {generationState} from '../../../../models/generationState.interface';
 import {Card} from 'primeng/card';
 import {Select} from 'primeng/select';
 import {Dialog} from 'primeng/dialog';
+import {DrawerModule} from 'primeng/drawer';
 import {MonacoEditorComponent} from '../monaco-editor/monaco-editor.component';
+import Papa from 'papaparse';
+
+interface TestStep {
+  aktion: string;
+  daten: string;
+  erwartetesResultat: string;
+}
 
 @Component({
   selector: 'app-test-editor',
@@ -27,6 +37,8 @@ import {MonacoEditorComponent} from '../monaco-editor/monaco-editor.component';
     Card,
     Select,
     Dialog,
+    DrawerModule,
+    DatePipe,
     MonacoEditorComponent
   ],
   templateUrl: './test-editor.html',
@@ -36,9 +48,10 @@ export class TestEditor implements OnInit, OnChanges {
   test = input.required<Test>();
   deleteItem = output<number>();
 
-  private testService = inject(TestService);
-  private messageService = inject(MessageService);
-  private pollingService = inject(PollingService);
+  private testService: TestService = inject(TestService);
+  private testRunService: TestRunService = inject(TestRunService);
+  private messageService: MessageService = inject(MessageService);
+  private pollingService: PollingService = inject(PollingService);
 
   testSteps = signal<TestStep[]>([]);
   isSaving = signal<boolean>(false);
@@ -48,7 +61,6 @@ export class TestEditor implements OnInit, OnChanges {
   environments = input.required<Environment[]>();
   selectedEnvironment = signal<Environment | null>(null);
 
-
   showCodeDialog = signal<boolean>(false);
   testCode = signal<string>('');
   isSavingCode = signal<boolean>(false);
@@ -57,7 +69,11 @@ export class TestEditor implements OnInit, OnChanges {
 
   isRunningTest = signal<boolean>(false);
   testStatus = signal<'none' | 'passed' | 'failed'>('none');
-  testResult = signal<any>(null);
+  testResult = signal<TestRun | null>(null);
+  testRuns = signal<TestRun[]>([]);
+  isLoadingTestRuns = signal<boolean>(false);
+  showTestRunsDrawer = signal<boolean>(false);
+  readonly testStatusEnum = TestStatus;
 
   cols = [
     {field: 'aktion', header: 'Aktion'},
@@ -68,7 +84,6 @@ export class TestEditor implements OnInit, OnChanges {
   ngOnInit(): void {
     this.loadTestData();
     this.isGenerating.set(this.test().generationState === generationState.IN_PROGRESS);
-    this.checkTestFileExists();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -78,118 +93,68 @@ export class TestEditor implements OnInit, OnChanges {
   }
 
   private loadTestData(): void {
-    const steps: TestStep[] = [];
-
-    if (this.test && this.test().testCSV) {
-      console.log('testCSV:', this.test().testCSV);
-      const parsedSteps = this.parseCSV(this.test().testCSV);
-      steps.push(...parsedSteps);
-      console.log('Parsed testSteps:', steps);
-    }
-
+    const steps = this.test()?.testCSV ? this.parseCSV(this.test().testCSV) : [];
     this.testSteps.set(steps);
+
     const env = this.environments().find(env => env.id === this.test().environmentID) || null;
     this.selectedEnvironment.set(env);
+
     this.checkTestFileExists();
+    this.applyLatestTestRun([]);
+    this.loadTestRuns();
   }
 
   parseCSV(csv: string): TestStep[] {
-    if (!csv || csv.trim() === '') {
-      console.log('CSV ist leer');
+    if (!csv?.trim()) {
       return [];
     }
 
-    console.log('Original CSV:', csv);
+    const result = Papa.parse<Record<string, string>>(csv, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: false,
+      delimitersToGuess: [',', '\t', '|', ';'],
+      transform: (value) => value.trim()
+    });
 
-    // Behandle sowohl echte Newlines als auch escaped Newlines (\\n)
-    // Das ist wichtig, weil JSON oft \\n als String enthält
-    const normalizedCsv = csv.replace(/\\n/g, '\n');
-    console.log('Normalized CSV:', normalizedCsv);
-
-    const lines = normalizedCsv.split('\n').filter(line => line.trim() !== '');
-    console.log('Lines:', lines);
-
-    const steps: TestStep[] = [];
-
-    // Skip header line
-    for (let i = 1; i < lines.length; i++) {
-      console.log(`Parsing line ${i}:`, lines[i]);
-      const values = this.parseCSVLine(lines[i]);
-      console.log(`Parsed values:`, values);
-
-      if (values.length >= 3) {
-        steps.push({
-          aktion: values[0],
-          daten: values[1],
-          erwartetesResultat: values[2]
-        });
-      }
+    if (result.errors.length > 0) {
+      console.warn('CSV parsing errors:', result.errors);
     }
 
-    console.log('Final testSteps:', steps);
-    return steps;
-  }
-
-  parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-
-    result.push(current.trim());
-    return result;
+    return result.data.map(row => ({
+      aktion: row['Action'] || row['Aktion'] || '',
+      daten: row['Data'] || row['Daten'] || '',
+      erwartetesResultat: row['Expected Result'] || row['Erwartetes Resultat'] || ''
+    }));
   }
 
   generateCSV(): string {
-    // Sicherheitsprüfung
     const steps = this.testSteps();
-    if (!steps || !Array.isArray(steps) || steps.length === 0) {
-      return 'Aktion,Daten,Erwartetes Resultat';
+    if (!steps?.length) {
+      return 'Action,Data,Expected Result';
     }
 
-    const header = 'Aktion,Daten,Erwartetes Resultat';
-    const rows = steps.map(step => {
-      const aktion = `"${(step.aktion || '').replace(/"/g, '""')}"`;
-      const daten = `"${(step.daten || '').replace(/"/g, '""')}"`;
-      const resultat = `"${(step.erwartetesResultat || '').replace(/"/g, '""')}"`;
-      return `${aktion},${daten},${resultat}`;
-    });
+    const data = steps.map(step => ({
+      'Action': step.aktion,
+      'Data': step.daten,
+      'Expected Result': step.erwartetesResultat
+    }));
 
-    // Verwende echte Newlines beim Generieren
-    return [header, ...rows].join('\n');
+    return Papa.unparse(data, {
+      header: true,
+      quotes: true,
+      skipEmptyLines: true
+    });
   }
 
   addRow(): void {
-    // Hole aktuelle testSteps und füge neue Zeile hinzu
-    const currentSteps = [...this.testSteps()];
-    currentSteps.push({
-      aktion: '',
-      daten: '',
-      erwartetesResultat: ''
-    });
-    this.testSteps.set(currentSteps);
+    this.testSteps.update(steps => [...steps, {aktion: '', daten: '', erwartetesResultat: ''}]);
     this.updateTestCSV();
   }
 
   deleteRow(index: number): void {
-    const currentSteps = [...this.testSteps()];
-    if (currentSteps.length > index) {
-      currentSteps.splice(index, 1);
-      this.testSteps.set(currentSteps);
-      this.updateTestCSV();
-    }
+    this.testSteps.update(steps => steps.filter((_, i) => i !== index));
+    this.updateTestCSV();
   }
 
   onCellEdit(): void {
@@ -201,7 +166,7 @@ export class TestEditor implements OnInit, OnChanges {
   }
 
   saveTest(): void {
-    if (!this.test || !this.test().id) {
+    if (!this.test()?.id) {
       this.messageService.add({
         severity: 'error',
         summary: 'Fehler',
@@ -346,8 +311,114 @@ export class TestEditor implements OnInit, OnChanges {
     this.testCode.set(code);
   }
 
+  openTestRunsDrawer(): void {
+    this.showTestRunsDrawer.set(true);
+    if (!this.testRuns().length) {
+      this.loadTestRuns();
+    }
+  }
+
+  private loadTestRuns(): void {
+    const currentTest = this.test();
+    if (!currentTest?.id) {
+      this.testRuns.set([]);
+      this.applyLatestTestRun([]);
+      return;
+    }
+
+    const testId = currentTest.id;
+
+    this.isLoadingTestRuns.set(true);
+    this.testRunService.getTestRuns(testId).subscribe({
+      next: (response: HttpResponse<TestRun[]>) => {
+        this.isLoadingTestRuns.set(false);
+        const runs = response.body ?? [];
+        this.testRuns.set(this.sortRuns(runs));
+        this.applyLatestTestRun(this.testRuns());
+      },
+      error: (error: unknown) => {
+        this.isLoadingTestRuns.set(false);
+        console.error('Error loading test runs:', error);
+        this.testRuns.set([]);
+        this.applyLatestTestRun([]);
+      }
+    });
+  }
+
+  private mergeLatestTestRun(testRun: TestRun): void {
+    this.testRuns.update(existing => {
+      const filtered = existing.filter(run => run.id !== testRun.id);
+      return this.sortRuns([testRun, ...filtered]);
+    });
+    this.applyLatestTestRun(this.testRuns());
+  }
+
+  private applyLatestTestRun(runs: TestRun[]): void {
+    if (!runs?.length) {
+      this.testStatus.set('none');
+      this.testResult.set(null);
+      return;
+    }
+
+    const latest = runs[0];
+    this.testResult.set(latest);
+    this.testStatus.set(this.mapStatusToDisplay(latest.status));
+  }
+
+  private mapStatusToDisplay(status: TestStatus | null | undefined): 'none' | 'passed' | 'failed' {
+    if (status === TestStatus.PASSED) {
+      return 'passed';
+    }
+    if (status === TestStatus.FAILED) {
+      return 'failed';
+    }
+    return 'none';
+  }
+
+  private sortRuns(runs: TestRun[]): TestRun[] {
+    return [...runs].sort((a, b) => this.toEpoch(b.executedAt) - this.toEpoch(a.executedAt));
+  }
+
+  private toEpoch(value?: string | null): number {
+    if (!value) {
+      return 0;
+    }
+    const parsed = new Date(value).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  private resolveSeverity(status: TestStatus): 'success' | 'error' | 'info' {
+    switch (status) {
+      case TestStatus.PASSED:
+        return 'success';
+      case TestStatus.FAILED:
+        return 'error';
+      default:
+        return 'info';
+    }
+  }
+
+  private resolveSummary(status: TestStatus): string {
+    switch (status) {
+      case TestStatus.PASSED:
+        return 'Test erfolgreich';
+      case TestStatus.FAILED:
+        return 'Test fehlgeschlagen';
+      case TestStatus.SKIPPED:
+        return 'Test übersprungen';
+      case TestStatus.PENDING:
+        return 'Test in Warteschlange';
+      case TestStatus.GENERATING:
+        return 'Test wird generiert';
+      case TestStatus.FIXING:
+        return 'Test wird repariert';
+      default:
+        return 'Teststatus aktualisiert';
+    }
+  }
+
   runTest(): void {
-    if (!this.test || !this.test().id) {
+    if (!this.test()?.id) {
       this.messageService.add({
         severity: 'error',
         summary: 'Fehler',
@@ -361,33 +432,21 @@ export class TestEditor implements OnInit, OnChanges {
     this.testResult.set(null);
 
     this.testService.executeTest(this.test().id).subscribe({
-      next: (response) => {
+      next: (response: HttpResponse<TestRun>) => {
         this.isRunningTest.set(false);
-        const testRun = response.body;
+        const testRun = response.body as TestRun | null;
 
         if (testRun) {
-          if (testRun.status === 'PASSED') {
-            this.testStatus.set('passed');
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Test erfolgreich'
-            });
-          } else if (testRun.status === 'FAILED') {
-            this.testStatus.set('failed');
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Test fehlgeschlagen'
-            });
-          } else {
-            this.testStatus.set('none');
-            this.messageService.add({
-              severity: 'info',
-              summary: 'Test Status: ' + testRun.status
-            });
-          }
+          this.mergeLatestTestRun(testRun);
+          const severity = this.resolveSeverity(testRun.status);
+          this.messageService.add({
+            severity,
+            summary: this.resolveSummary(testRun.status),
+            detail: testRun.description
+          });
         }
       },
-      error: (error) => {
+      error: (error: unknown) => {
         this.isRunningTest.set(false);
         this.testStatus.set('failed');
         console.error('Error running test:', error);

@@ -18,12 +18,6 @@ public class Project
 
     }
 
-    public Project (String name)
-    {
-        this.name = name;
-    }
-
-    //Attribute
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;

@@ -63,3 +63,27 @@
   border: 3px solid #ef4444 !important;
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
 }
+
+.test-run-drawer {
+  background-color: #f9fafb;
+
+  .test-run-card {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    &--passed {
+      border-color: #22c55e;
+    }
+
+    &--failed {
+      border-color: #ef4444;
+    }
+  }
+}
