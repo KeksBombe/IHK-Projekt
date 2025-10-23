@@ -2,6 +2,13 @@ package com.example.backend.controller;
 
 
 import com.example.backend.constants.EFileType;
+import com.example.backend.dto.CreateTestRequest;
+import com.example.backend.dto.TestDto;
+import com.example.backend.dto.TestRunDto;
+import com.example.backend.exceptions.FileOperationException;
+import com.example.backend.exceptions.ResourceNotFoundException;
+import com.example.backend.mapper.TestMapper;
+import com.example.backend.mapper.TestRunMapper;
 import com.example.backend.models.PlaywrightTest;
 import com.example.backend.models.TestModel;
 import com.example.backend.models.TestRun;
@@ -9,6 +16,7 @@ import com.example.backend.repo.TestRepo;
 import com.example.backend.service.AiService;
 import com.example.backend.service.FileService;
 import com.example.backend.service.PlaywrightTestRunner;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -24,219 +33,150 @@ public class TestController
 {
 
     private final TestRepo testRepo;
+    private final TestMapper testMapper;
+    private final TestRunMapper testRunMapper;
     private final AiService aiService;
     private final FileService fileService;
     private final PlaywrightTestRunner playwrightTestRunner;
 
-    public TestController (TestRepo testRepo, AiService aiService, FileService fileservice, PlaywrightTestRunner playwrightTestRunner)
+    public TestController (TestRepo testRepo, TestMapper testMapper, TestRunMapper testRunMapper, AiService aiService, FileService fileservice, PlaywrightTestRunner playwrightTestRunner)
     {
         this.testRepo = testRepo;
+        this.testMapper = testMapper;
+        this.testRunMapper = testRunMapper;
         this.aiService = aiService;
         this.fileService = fileservice;
         this.playwrightTestRunner = playwrightTestRunner;
     }
 
     @GetMapping("/getTests/{id}")
-    public ResponseEntity<List<TestModel>> getTests (@PathVariable Long id)
+    public ResponseEntity<List<TestDto>> getTests (@PathVariable Long id)
     {
-        try
-        {
-            List<TestModel> tests = testRepo.findByStoryID(id);
-            return tests.isEmpty()
-                    ? ResponseEntity.noContent().build()
-                    : ResponseEntity.ok(tests);
-        } catch (Exception e)
-        {
-            return ResponseEntity.internalServerError().build();
-        }
+        List<TestDto> tests = testRepo.findByStoryID(id).stream()
+                .map(testMapper::toDto)
+                .collect(Collectors.toList());
+        return tests.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(tests);
     }
 
     @GetMapping("/test/{id}")
-    public ResponseEntity<TestModel> getTestById (@PathVariable Long id)
+    public ResponseEntity<TestDto> getTestById (@PathVariable Long id)
     {
-        try
-        {
-            return testRepo.findById(id)
-                    .map(test -> ResponseEntity.ok().body(test))
-                    .orElseGet(() -> ResponseEntity.noContent().build());
-        } catch (Exception e)
-        {
-            log.error(e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
+        return testRepo.findById(id)
+                .map(testMapper::toDto)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ResourceNotFoundException("Test", id));
     }
 
     @PostMapping("/test")
-    public ResponseEntity<TestModel> createTest (@RequestBody TestModel test)
+    public ResponseEntity<TestDto> createTest (@Valid @RequestBody CreateTestRequest request)
     {
-        try
-        {
-            test.setId(null);
-            TestModel testObj = testRepo.save(test);
-            return ResponseEntity.status(HttpStatus.CREATED).body(testObj);
-        } catch (Exception e)
-        {
-            log.error(e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
+        TestModel test = testMapper.toEntity(request);
+        test.setId(null);
+        TestModel savedTest = testRepo.save(test);
+        return ResponseEntity.status(HttpStatus.CREATED).body(testMapper.toDto(savedTest));
     }
 
     @PatchMapping("/test/{id}")
-    public ResponseEntity<TestModel> updateTest (@PathVariable Long id, @RequestBody TestModel test)
+    public ResponseEntity<TestDto> updateTest (@PathVariable Long id, @Valid @RequestBody TestDto testDto)
     {
-        try
+        if (!testRepo.existsById(id))
         {
-            if (testRepo.existsById(id))
-            {
-                test.setId(id);
-                TestModel testObj = testRepo.save(test);
-                return ResponseEntity.ok(testObj);
-            } else
-            {
-                return ResponseEntity.noContent().build();
-            }
-        } catch (Exception e)
-        {
-            log.error(e.getMessage());
-            return ResponseEntity.internalServerError().build();
+            throw new ResourceNotFoundException("Test", id);
         }
+        testDto.setId(id);
+        TestModel test = testMapper.toEntity(testDto);
+        TestModel savedTest = testRepo.save(test);
+        return ResponseEntity.ok(testMapper.toDto(savedTest));
     }
 
     @DeleteMapping("/test/{id}")
-    public ResponseEntity<HttpStatus> deleteTest (@PathVariable Long id)
+    public ResponseEntity<Void> deleteTest (@PathVariable Long id)
     {
-        try
+        if (!testRepo.existsById(id))
         {
-            if (testRepo.existsById(id))
-            {
-                testRepo.deleteById(id);
-                return ResponseEntity.ok().build();
-            } else
-            {
-                return ResponseEntity.noContent().build();
-            }
-        } catch (Exception e)
-        {
-            return ResponseEntity.internalServerError().build();
+            throw new ResourceNotFoundException("Test", id);
         }
+        testRepo.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/generate/{id}")
     public ResponseEntity<String> generateTest (@PathVariable Long id)
     {
+        TestModel test = testRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Test", id));
+
+        log.info("Generating Playwright tests for test ID: {}", id);
+        String result = aiService.generateAndRunTests(test);
+
         try
         {
-            // Get the test by ID
-            return testRepo.findById(id)
-                    .map(test ->
-                    {
-                        try
-                        {
-                            log.info("Generating Playwright tests for test ID: {}", id);
-                            // Call AI service to generate and run tests
-                            String result = aiService.generateAndRunTests(test);
-                            this.fileService.writeFile(test.getId().toString(), result, EFileType.SPEC_TS);
-                            return ResponseEntity.ok(result);
-                        } catch (Exception e)
-                        {
-                            log.error("Error generating tests for ID: {}", id, e);
-                            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                    .body("Error generating tests: " + e.getMessage());
-                        }
-                    })
-                    .orElseGet(() ->
-                    {
-                        log.warn("Test with ID {} not found", id);
-                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                .body("Test with ID " + id + " not found");
-                    });
-        } catch (Exception e)
+            fileService.writeFile(test.getId().toString(), result, EFileType.SPEC_TS);
+        } catch (IOException e)
         {
-            log.error("Error in generate endpoint for ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
+            throw new FileOperationException("Failed to write test file for test ID: " + id, e);
         }
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/test/code/{id}")
     public ResponseEntity<PlaywrightTest> getTestCodeById (@PathVariable Long id)
     {
+        PlaywrightTest playwrightTest = new PlaywrightTest();
+        String fileName = id.toString() + EFileType.SPEC_TS.getExtension();
+        String code;
+
         try
         {
-            PlaywrightTest playwrightTest = new PlaywrightTest();
-            String fileName = id.toString() + EFileType.SPEC_TS.getExtension();
-            String code;
-            try
-            {
-                code = this.fileService.readFile(fileName);
-            } catch (IOException e)
-            {
-                log.warn("No test code file found for ID: {}", id);
-                return ResponseEntity.noContent().build();
-            }
-
-            playwrightTest.setTestID(id);
-            playwrightTest.setCode(code);
-
-            return ResponseEntity.ok(playwrightTest);
-        } catch (Exception e)
+            code = fileService.readFile(fileName);
+        } catch (IOException e)
         {
-            log.error("Error reading test code for ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.warn("No test code file found for ID: {}", id);
+            return ResponseEntity.noContent().build();
         }
+
+        playwrightTest.setTestID(id);
+        playwrightTest.setCode(code);
+
+        return ResponseEntity.ok(playwrightTest);
     }
 
     @PutMapping("/test/code/{id}")
     public ResponseEntity<String> saveTestCodeById (@PathVariable Long id, @RequestBody PlaywrightTest playwrightTest)
     {
+        if (!testRepo.existsById(id))
+        {
+            throw new ResourceNotFoundException("Test", id);
+        }
+
         try
         {
-            if (!testRepo.existsById(id))
-            {
-                log.warn("Test with ID {} not found", id);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Test with ID " + id + " not found");
-            }
-
-            this.fileService.writeFile(id.toString(), playwrightTest.getCode(), EFileType.SPEC_TS);
-            log.info("Successfully saved test code for ID: {}", id);
-            return ResponseEntity.ok("Test code saved successfully");
+            fileService.writeFile(id.toString(), playwrightTest.getCode(), EFileType.SPEC_TS);
         } catch (IOException e)
         {
-            log.error("Error saving test code for ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error saving test code: " + e.getMessage());
-        } catch (Exception e)
-        {
-            log.error("Error in save test code endpoint for ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
+            throw new FileOperationException("Failed to save test code for test ID: " + id, e);
         }
+
+        log.info("Successfully saved test code for ID: {}", id);
+        return ResponseEntity.ok("Test code saved successfully");
     }
 
     @PostMapping("/test/execute/{id}")
-    public ResponseEntity<TestRun> executePlaywrightTest (@PathVariable Long id)
+    public ResponseEntity<TestRunDto> executePlaywrightTest (@PathVariable Long id)
     {
-        try
+        if (!testRepo.existsById(id))
         {
-            // Check if test exists
-            if (!testRepo.existsById(id))
-            {
-                log.warn("Test with ID {} not found", id);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-
-            String testFileName = id.toString() + ".spec.ts";
-            log.info("Executing Playwright test: {}", testFileName);
-
-            TestRun testRun = playwrightTestRunner.runPlaywrightTest(id, testFileName);
-
-            return ResponseEntity.ok(testRun);
-
-        } catch (Exception e)
-        {
-            log.error("Error in execute test endpoint for ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            throw new ResourceNotFoundException("Test", id);
         }
+
+        String testFileName = id.toString() + ".spec.ts";
+        log.info("Executing Playwright test: {}", testFileName);
+
+        TestRun testRun = playwrightTestRunner.runPlaywrightTest(id, testFileName);
+
+        return ResponseEntity.ok(testRunMapper.toDto(testRun));
     }
 }

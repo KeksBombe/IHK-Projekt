@@ -1,8 +1,6 @@
 package com.example.backend.models;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,36 +16,20 @@ public class Environment
 
     }
 
-    //Attribute
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-    String name;
-    String username;
-    String password;
-    URL url;
+    private Long id;
 
-    //Fremdschlüssel
-    @ManyToOne
+    private String name;
+
+    private String username;
+
+    private String password;
+
+    private URL url;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "projectid", referencedColumnName = "id")
-    @JsonIgnore
-    Project project;
+    private Project project;
 
-    // JSON serialization compatibility
-    @JsonProperty("projectID")
-    public Long getProjectID ()
-    {
-        return project != null ? project.getId() : null;
-    }
-
-    @JsonProperty("projectID")
-    public void setProjectID (Long projectID)
-    {
-        if (projectID != null)
-        {
-            Project p = new Project();
-            p.setId(projectID);
-            this.project = p;
-        }
-    }
 }

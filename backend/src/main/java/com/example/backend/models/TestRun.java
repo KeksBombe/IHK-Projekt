@@ -3,8 +3,6 @@ package com.example.backend.models;
 
 import com.example.backend.constants.TestStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -21,40 +19,22 @@ public class TestRun
 
     }
 
-    //Attribute
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
+    
     @Enumerated(EnumType.STRING)
-    TestStatus status;
-    String description;
+    private TestStatus status;
+
+    private String description;
+    
     @Column(name = "executed_at")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    LocalDateTime executedAt;
+    private LocalDateTime executedAt;
 
-    //Fremdschlüssel
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "testid", referencedColumnName = "id")
-    @JsonIgnore
-    TestModel test;
-
-    // JSON serialization compatibility
-    @JsonProperty("testId")
-    public Long getTestId ()
-    {
-        return test != null ? test.getId() : null;
-    }
-
-    @JsonProperty("testId")
-    public void setTestId (Long testId)
-    {
-        if (testId != null)
-        {
-            TestModel t = new TestModel();
-            t.setId(testId);
-            this.test = t;
-        }
-    }
+    private TestModel test;
 
     @PrePersist
     public void prePersist ()

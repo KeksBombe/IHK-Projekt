@@ -1,8 +1,6 @@
 package com.example.backend.models;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,61 +17,24 @@ public class TestModel
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-    String name;
-    String description;
+    private Long id;
+
+    private String name;
+
+    private String description;
+    
     @Column(columnDefinition = "TEXT")
-    String testCSV;
+    private String testCSV;
 
-    //Fremdschlüssel
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "environmentid", referencedColumnName = "id")
-    @JsonIgnore
-    Environment environment;
+    private Environment environment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "storyid", referencedColumnName = "id")
-    @JsonIgnore
-    UserStory userStory;
+    private UserStory userStory;
 
     @Enumerated(EnumType.STRING)
-    GenerationState generationState = GenerationState.NOT_STARTED;
+    private GenerationState generationState = GenerationState.NOT_STARTED;
 
-    // JSON serialization compatibility
-    @JsonProperty("environmentID")
-    public Long getEnvironmentID ()
-    {
-        return environment != null ? environment.getId() : null;
-    }
-
-    @JsonProperty("environmentID")
-    public void setEnvironmentID (Long environmentID)
-    {
-        if (environmentID != null)
-        {
-            Environment e = new Environment();
-            e.setId(environmentID);
-            this.environment = e;
-        } else
-        {
-            this.environment = null;
-        }
-    }
-
-    @JsonProperty("storyID")
-    public Long getStoryID ()
-    {
-        return userStory != null ? userStory.getId() : null;
-    }
-
-    @JsonProperty("storyID")
-    public void setStoryID (Long storyID)
-    {
-        if (storyID != null)
-        {
-            UserStory us = new UserStory();
-            us.setId(storyID);
-            this.userStory = us;
-        }
-    }
 }

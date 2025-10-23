@@ -1,14 +1,20 @@
 package com.example.backend.controller;
 
 
+import com.example.backend.dto.CreateProjectRequest;
+import com.example.backend.dto.ProjectDto;
+import com.example.backend.dto.RenameProjectRequest;
+import com.example.backend.exceptions.ResourceNotFoundException;
+import com.example.backend.mapper.ProjectMapper;
 import com.example.backend.models.Project;
 import com.example.backend.repo.ProjectRepo;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -16,94 +22,68 @@ public class ProjectController
 {
 
     private final ProjectRepo projectRepo;
+    private final ProjectMapper projectMapper;
 
-    public ProjectController (ProjectRepo projectRepo)
+    public ProjectController (ProjectRepo projectRepo, ProjectMapper projectMapper)
     {
         this.projectRepo = projectRepo;
+        this.projectMapper = projectMapper;
     }
 
     @GetMapping("/getAllProjects")
-    public ResponseEntity<List<Project>> getAllProjects ()
+    public ResponseEntity<List<ProjectDto>> getAllProjects ()
     {
-        try
-        {
-            List<Project> projects = new ArrayList<>(projectRepo.findAll());
+        List<ProjectDto> projects = projectRepo.findAll().stream()
+                .map(projectMapper::toDto)
+                .collect(Collectors.toList());
 
-            if (projects.isEmpty())
-            {
-                return ResponseEntity.noContent().build();
-            }
-
-            return ResponseEntity.ok(projects);
-        } catch (Exception ex)
+        if (projects.isEmpty())
         {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.noContent().build();
         }
+
+        return ResponseEntity.ok(projects);
     }
 
     @GetMapping("/getProjectById/{id}")
-    public ResponseEntity<Project> getProjectById (@PathVariable Long id)
+    public ResponseEntity<ProjectDto> getProjectById (@PathVariable Long id)
     {
-        try
-        {
-            if (projectRepo.existsById(id))
-            {
-                return projectRepo.findById(id)
-                        .map(ResponseEntity::ok)
-                        .orElseGet(() -> ResponseEntity.noContent().build());
-            } else
-            {
-                return ResponseEntity.noContent().build();
-            }
-        } catch (Exception e)
-        {
-            return ResponseEntity.internalServerError().build();
-        }
+        return projectRepo.findById(id)
+                .map(projectMapper::toDto)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", id));
     }
 
     @PostMapping("/createProject")
-    public ResponseEntity<Project> createProject (@RequestBody Project project)
+    public ResponseEntity<ProjectDto> createProject (@Valid @RequestBody CreateProjectRequest request)
     {
-        try
-        {
-            Project projectObj = projectRepo.save(project);
-            return ResponseEntity.status(HttpStatus.CREATED).body(projectObj);
-        } catch (Exception e)
-        {
-            return ResponseEntity.internalServerError().build();
-        }
+        Project project = projectMapper.toEntity(request);
+        Project savedProject = projectRepo.save(project);
+        return ResponseEntity.status(HttpStatus.CREATED).body(projectMapper.toDto(savedProject));
     }
 
     @PatchMapping("/renameProject/{id}")
-    public ResponseEntity<Project> updateProject (@RequestBody Project project, @PathVariable Long id)
+    public ResponseEntity<ProjectDto> renameProject (@Valid @RequestBody RenameProjectRequest request, @PathVariable Long id)
     {
-        try
-        {
-            return projectRepo.findById(id)
-                    .map(existing ->
-                    {
-                        existing.setName(project.getName());
-                        Project saved = projectRepo.save(existing);
-                        return ResponseEntity.ok(saved);
-                    })
-                    .orElseGet(() -> ResponseEntity.notFound().build());
-        } catch (Exception e)
-        {
-            return ResponseEntity.internalServerError().build();
-        }
+        return projectRepo.findById(id)
+                .map(existing ->
+                {
+                    existing.setName(request.getName());
+                    Project saved = projectRepo.save(existing);
+                    return ResponseEntity.ok(projectMapper.toDto(saved));
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Project", id));
     }
 
 
     @DeleteMapping("/deleteProject/{id}")
-    public ResponseEntity<HttpStatus> deleteProject (@PathVariable Long id)
+    public ResponseEntity<Void> deleteProject (@PathVariable Long id)
     {
-        try
+        if (!projectRepo.existsById(id))
         {
-            projectRepo.deleteById(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e)
-        {
-            return ResponseEntity.internalServerError().build();
+            throw new ResourceNotFoundException("Project", id);
         }
+        projectRepo.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }
