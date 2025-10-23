@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 
+import com.example.backend.dto.EnvironmentDto;
 import com.example.backend.models.Environment;
 import com.example.backend.models.Project;
 import com.example.backend.repo.EnvironmentRepo;
@@ -57,7 +58,7 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findById(1L)).thenReturn(Optional.of(storedEnvironment));
 
-        ResponseEntity<Environment> response = environmentController.getEnvironmentById(1L);
+        ResponseEntity<EnvironmentDto> response = environmentController.getEnvironmentById(1L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Environment body = Objects.requireNonNull(response.getBody());

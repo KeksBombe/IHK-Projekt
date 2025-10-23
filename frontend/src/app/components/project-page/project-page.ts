@@ -105,6 +105,7 @@ export class ProjectPage implements OnInit {
       this.environments = response.body ?? [];
       this.filteredEnvironments = [...this.environments];
       this.cdr.detectChanges();
+      console.table(this.environments)
     })
   }
 

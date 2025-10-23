@@ -1,6 +1,8 @@
 package com.example.backend.controller;
 
 
+import com.example.backend.dto.EnvironmentDto;
+import com.example.backend.mapper.EnvironmentMapper;
 import com.example.backend.models.Environment;
 import com.example.backend.repo.EnvironmentRepo;
 import org.springframework.http.HttpStatus;
@@ -17,31 +19,31 @@ public class EnvironmentController
 {
 
     private final EnvironmentRepo environmentRepo;
+    private final EnvironmentMapper environmentMapper;
 
     private static final String MASKED_PASSWORD = "************";
 
-    public EnvironmentController (EnvironmentRepo environmentRepo)
+    public EnvironmentController (EnvironmentRepo environmentRepo, EnvironmentMapper environmentMapper)
     {
         this.environmentRepo = environmentRepo;
+        this.environmentMapper = environmentMapper;
     }
 
     /**
-     * Masks the password in an Environment object
+     * Masks the password in an EnvironmentDto object
      */
-    private Environment maskPassword (Environment env)
+    private EnvironmentDto maskPassword (Environment env)
     {
-        Environment maskedEnv = new Environment();
-        maskedEnv.setId(env.getId());
-        maskedEnv.setName(env.getName());
-        maskedEnv.setUrl(env.getUrl());
-        maskedEnv.setUsername(env.getUsername());
-        maskedEnv.setPassword(MASKED_PASSWORD);
-        maskedEnv.setProject(env.getProject());
-        return maskedEnv;
+        EnvironmentDto dto = environmentMapper.toDto(env);
+        if (dto != null)
+        {
+            dto.setPassword(MASKED_PASSWORD);
+        }
+        return dto;
     }
 
     @GetMapping("/getEnvironmentById/{id}")
-    public ResponseEntity<Environment> getEnvironmentById (@PathVariable Long id)
+    public ResponseEntity<EnvironmentDto> getEnvironmentById (@PathVariable Long id)
     {
         try
         {
@@ -57,13 +59,14 @@ public class EnvironmentController
     }
 
     @PostMapping("/createEnvironment")
-    public ResponseEntity<Environment> createEnvironment (@RequestBody Environment environment)
+    public ResponseEntity<EnvironmentDto> createEnvironment (@RequestBody EnvironmentDto environmentDto)
     {
         try
         {
+            Environment environment = environmentMapper.toEntity(environmentDto);
             environment.setId(null);
-            Environment environmentObj = environmentRepo.save(environment);
-            return ResponseEntity.status(HttpStatus.CREATED).body(maskPassword(environmentObj));
+            Environment savedEnvironment = environmentRepo.save(environment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(maskPassword(savedEnvironment));
         } catch (Exception e)
         {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -71,7 +74,7 @@ public class EnvironmentController
     }
 
     @PatchMapping("/updateEnvironment/{id}")
-    public ResponseEntity<Environment> updateEnvironment (@RequestBody Environment environment, @PathVariable Long id)
+    public ResponseEntity<EnvironmentDto> updateEnvironment (@RequestBody EnvironmentDto environmentDto, @PathVariable Long id)
     {
         try
         {
@@ -80,17 +83,17 @@ public class EnvironmentController
             if (oldEnvironmentObj.isPresent())
             {
                 Environment updatedEnvironmentData = oldEnvironmentObj.get();
-                updatedEnvironmentData.setName(environment.getName());
-                updatedEnvironmentData.setUrl(environment.getUrl());
-                updatedEnvironmentData.setUsername(environment.getUsername());
+                updatedEnvironmentData.setName(environmentDto.getName());
+                updatedEnvironmentData.setUrl(environmentDto.getUrl());
+                updatedEnvironmentData.setUsername(environmentDto.getUsername());
 
-                if (!MASKED_PASSWORD.equals(environment.getPassword()))
+                if (!MASKED_PASSWORD.equals(environmentDto.getPassword()))
                 {
-                    updatedEnvironmentData.setPassword(environment.getPassword());
+                    updatedEnvironmentData.setPassword(environmentDto.getPassword());
                 }
 
-                Environment environmentObj = environmentRepo.save(updatedEnvironmentData);
-                return ResponseEntity.ok(maskPassword(environmentObj));
+                Environment savedEnvironment = environmentRepo.save(updatedEnvironmentData);
+                return ResponseEntity.ok(maskPassword(savedEnvironment));
             } else
             {
                 return ResponseEntity.notFound().build();
@@ -115,7 +118,7 @@ public class EnvironmentController
     }
 
     @GetMapping("/getEnvironmentsByProjectId/{projectId}")
-    public ResponseEntity<List<Environment>> getEnvironmentsByProjectId (@PathVariable Long projectId)
+    public ResponseEntity<List<EnvironmentDto>> getEnvironmentsByProjectId (@PathVariable Long projectId)
     {
         try
         {
@@ -125,7 +128,7 @@ public class EnvironmentController
                 return ResponseEntity.noContent().build();
             }
 
-            List<Environment> maskedEnvironments = environments.stream()
+            List<EnvironmentDto> maskedEnvironments = environments.stream()
                     .map(this::maskPassword)
                     .collect(Collectors.toList());
 

@@ -4,8 +4,6 @@ package com.example.backend.models;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.net.URL;
-
 
 @Entity
 @Data
@@ -26,7 +24,7 @@ public class Environment
 
     private String password;
 
-    private URL url;
+    private String url;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "projectid", referencedColumnName = "id")

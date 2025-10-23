@@ -13,6 +13,6 @@ import java.util.List;
 public interface EnvironmentRepo extends JpaRepository<Environment, Long>
 {
 
-    @Query("SELECT e FROM Environment e WHERE e.project.id = ?1")
+    @Query("SELECT e FROM Environment e JOIN FETCH e.project WHERE e.project.id = ?1")
     List<Environment> findByProjectId (Long projectId);
 }

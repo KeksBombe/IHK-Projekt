@@ -140,7 +140,6 @@
       <label for="env-url">URL</label>
       <input id="env-url" type="text" pInputText [(ngModel)]="newEnvironmentUrl" placeholder="https://..."
              name="newEnvironmentURl" required
-             pattern="(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?\/[a-zA-Z0-9]{2,}|((https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?)|(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,})?"
              #envUrl="ngModel"/>
       @if (envUrl.invalid && envUrl.touched) {
         <p-message severity="error" size="small" variant="simple">
@@ -229,7 +228,6 @@
       <label for="edit-env-url">URL</label>
       <input id="edit-env-url" type="text" pInputText [(ngModel)]="editEnvironmentUrl"
              name="editEnvironmentUrl" required
-             pattern="(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?\/[a-zA-Z0-9]{2,}|((https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?)|(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,})?"
              #editEnvUrl="ngModel"/>
       @if (editEnvUrl.invalid && editEnvUrl.touched) {
         <p-message severity="error" size="small" variant="simple">
