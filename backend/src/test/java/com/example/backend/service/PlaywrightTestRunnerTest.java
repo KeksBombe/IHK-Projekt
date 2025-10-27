@@ -120,7 +120,7 @@ class PlaywrightTestRunnerTest
         assertThat(command.get(0)).isEqualTo("cmd.exe");
         assertThat(command.get(1)).isEqualTo("/c");
         assertThat(command.get(2)).contains("cd backend");
-        assertThat(command.get(2)).contains("npx playwright test login.spec.ts --reporter=json");
+        assertThat(command.get(2)).contains("npx playwright test login.spec.ts");
     }
 
     private void invokeParse (TestRun run, String output, int exitCode) throws Exception

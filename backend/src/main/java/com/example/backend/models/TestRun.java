@@ -3,6 +3,7 @@ package com.example.backend.models;
 
 import com.example.backend.constants.TestStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -34,6 +35,7 @@ public class TestRun
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "testid", referencedColumnName = "id")
+    @JsonIgnore
     private TestModel test;
 
     @PrePersist

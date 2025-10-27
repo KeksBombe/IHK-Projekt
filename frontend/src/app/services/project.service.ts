@@ -27,4 +27,8 @@ export class ProjectService {
   renameProject(project: Project): Observable<HttpResponse<Project>> {
     return this.http.patch<Project>(`${this.backendUrl}/renameProject/${project.id}`, project, {observe: 'response'});
   }
+
+  deleteProject(id: number) {
+    return this.http.delete<void>(`${this.backendUrl}/deleteProject/${id}`, {observe: 'response'});
+  }
 }

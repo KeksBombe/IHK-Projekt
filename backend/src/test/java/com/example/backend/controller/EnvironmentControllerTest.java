@@ -2,9 +2,11 @@ package com.example.backend.controller;
 
 
 import com.example.backend.dto.EnvironmentDto;
+import com.example.backend.mapper.EnvironmentMapper;
 import com.example.backend.models.Environment;
 import com.example.backend.models.Project;
 import com.example.backend.repo.EnvironmentRepo;
+import com.example.backend.repo.ProjectRepo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +44,12 @@ class EnvironmentControllerTest
     @Mock
     private EnvironmentRepo environmentRepo;
 
+    @Mock
+    private ProjectRepo projectRepo;
+
+    @Mock
+    private EnvironmentMapper environmentMapper;
+
     @InjectMocks
     private EnvironmentController environmentController;
 
@@ -50,6 +59,40 @@ class EnvironmentControllerTest
     void setUp () throws Exception
     {
         storedEnvironment = buildEnvironment(1L, "QA", "qa_user", "secret", uriToUrl("https://qa.example.com"));
+
+        // Default mapping behavior for mapper used by controller
+        lenient().when(environmentMapper.toDto(any(Environment.class))).thenAnswer(invocation ->
+        {
+            Environment env = invocation.getArgument(0);
+            if (env == null) return null;
+            EnvironmentDto dto = new EnvironmentDto();
+            dto.setId(env.getId());
+            dto.setName(env.getName());
+            dto.setUsername(env.getUsername());
+            dto.setPassword(env.getPassword());
+            dto.setUrl(env.getUrl());
+            dto.setProjectID(env.getProject() != null ? env.getProject().getId() : null);
+            return dto;
+        });
+
+        lenient().when(environmentMapper.toEntity(any(EnvironmentDto.class))).thenAnswer(invocation ->
+        {
+            EnvironmentDto dto = invocation.getArgument(0);
+            if (dto == null) return null;
+            Environment env = new Environment();
+            env.setId(dto.getId());
+            env.setName(dto.getName());
+            env.setUsername(dto.getUsername());
+            env.setPassword(dto.getPassword());
+            env.setUrl(dto.getUrl());
+            if (dto.getProjectID() != null)
+            {
+                Project p = new Project();
+                p.setId(dto.getProjectID());
+                env.setProject(p);
+            }
+            return env;
+        });
     }
 
     @Test
@@ -61,7 +104,7 @@ class EnvironmentControllerTest
         ResponseEntity<EnvironmentDto> response = environmentController.getEnvironmentById(1L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        Environment body = Objects.requireNonNull(response.getBody());
+        EnvironmentDto body = Objects.requireNonNull(response.getBody());
         assertThat(body).isNotNull();
         assertEquals(MASKED_PASSWORD, body.getPassword());
         assertEquals(storedEnvironment.getUsername(), body.getUsername());
@@ -73,7 +116,7 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findById(5L)).thenReturn(Optional.empty());
 
-        ResponseEntity<Environment> response = environmentController.getEnvironmentById(5L);
+        ResponseEntity<EnvironmentDto> response = environmentController.getEnvironmentById(5L);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
@@ -84,7 +127,7 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findById(2L)).thenThrow(new RuntimeException("db"));
 
-        ResponseEntity<Environment> response = environmentController.getEnvironmentById(2L);
+        ResponseEntity<EnvironmentDto> response = environmentController.getEnvironmentById(2L);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
@@ -93,44 +136,82 @@ class EnvironmentControllerTest
     @DisplayName("createEnvironment setzt ID auf null und maskiert Passwort")
     void createEnvironmentResetsIdAndMasksPassword () throws Exception
     {
-        Environment request = buildEnvironment(77L, "Prod", "deploy", "new_secret", uriToUrl("https://prod.example.com"));
+        EnvironmentDto requestDto = new EnvironmentDto();
+        requestDto.setId(77L);
+        requestDto.setName("Prod");
+        requestDto.setUsername("deploy");
+        requestDto.setPassword("new_secret");
+        requestDto.setUrl("https://prod.example.com");
+        requestDto.setProjectID(10L);
+
+        Project project = new Project();
+        project.setId(10L);
+
+        when(projectRepo.findById(10L)).thenReturn(Optional.of(project));
         when(environmentRepo.save(any(Environment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ResponseEntity<Environment> response = environmentController.createEnvironment(request);
+        ResponseEntity<EnvironmentDto> response = environmentController.createEnvironment(requestDto);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        Environment body = Objects.requireNonNull(response.getBody());
+        EnvironmentDto body = Objects.requireNonNull(response.getBody());
         assertThat(body).isNotNull();
         assertEquals(MASKED_PASSWORD, body.getPassword());
 
         ArgumentCaptor<Environment> captor = ArgumentCaptor.forClass(Environment.class);
         verify(environmentRepo).save(captor.capture());
         assertNull(captor.getValue().getId());
+        assertEquals(10L, captor.getValue().getProject().getId());
     }
 
     @Test
     @DisplayName("createEnvironment liefert 500 bei Fehler")
     void createEnvironmentReturnsInternalServerErrorOnException ()
     {
+        EnvironmentDto requestDto = new EnvironmentDto();
+        requestDto.setProjectID(10L);
+
+        Project project = new Project();
+        project.setId(10L);
+        when(projectRepo.findById(10L)).thenReturn(Optional.of(project));
         when(environmentRepo.save(any(Environment.class))).thenThrow(new RuntimeException("duplicate"));
 
-        ResponseEntity<Environment> response = environmentController.createEnvironment(new Environment());
+        ResponseEntity<EnvironmentDto> response = environmentController.createEnvironment(requestDto);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("createEnvironment liefert 400 wenn Projekt nicht gefunden wird")
+    void createEnvironmentReturnsBadRequestWhenProjectNotFound ()
+    {
+        EnvironmentDto requestDto = new EnvironmentDto();
+        requestDto.setId(77L);
+        requestDto.setName("Prod");
+        requestDto.setUsername("deploy");
+        requestDto.setPassword("new_secret");
+        requestDto.setUrl("https://prod.example.com");
+        requestDto.setProjectID(999L);
+
+        when(projectRepo.findById(999L)).thenReturn(Optional.empty());
+
+        ResponseEntity<EnvironmentDto> response = environmentController.createEnvironment(requestDto);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(environmentRepo, times(0)).save(any(Environment.class));
     }
 
     @Test
     @DisplayName("updateEnvironment ersetzt Passwort wenn neues Passwort gesendet wird")
     void updateEnvironmentUpdatesPasswordWhenProvided () throws Exception
     {
-        Environment updateRequest = buildEnvironment(null, "QA-2", "qa_new", "new-pass", uriToUrl("https://qa2.example.com"));
+        EnvironmentDto updateRequest = buildEnvironmentDto(null, "QA-2", "qa_new", "new-pass", "https://qa2.example.com", 10L);
         when(environmentRepo.findById(1L)).thenReturn(Optional.of(storedEnvironment));
         when(environmentRepo.save(any(Environment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ResponseEntity<Environment> response = environmentController.updateEnvironment(updateRequest, 1L);
+        ResponseEntity<EnvironmentDto> response = environmentController.updateEnvironment(updateRequest, 1L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        Environment body = Objects.requireNonNull(response.getBody());
+        EnvironmentDto body = Objects.requireNonNull(response.getBody());
         assertThat(body).isNotNull();
         assertEquals(MASKED_PASSWORD, body.getPassword());
 
@@ -144,10 +225,11 @@ class EnvironmentControllerTest
     @DisplayName("updateEnvironment behält altes Passwort wenn Maskenwert geschickt wird")
     void updateEnvironmentKeepsPasswordWhenMaskProvided ()
     {
-        Environment updateRequest = new Environment();
+        EnvironmentDto updateRequest = new EnvironmentDto();
         updateRequest.setPassword(MASKED_PASSWORD);
         updateRequest.setName("QA");
         updateRequest.setUsername("qa_user");
+        updateRequest.setProjectID(10L);
 
         when(environmentRepo.findById(1L)).thenReturn(Optional.of(storedEnvironment));
         when(environmentRepo.save(any(Environment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -165,7 +247,7 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findById(9L)).thenReturn(Optional.empty());
 
-        ResponseEntity<Environment> response = environmentController.updateEnvironment(new Environment(), 9L);
+        ResponseEntity<EnvironmentDto> response = environmentController.updateEnvironment(new EnvironmentDto(), 9L);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
@@ -176,7 +258,7 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findById(4L)).thenThrow(new RuntimeException("timeout"));
 
-        ResponseEntity<Environment> response = environmentController.updateEnvironment(new Environment(), 4L);
+        ResponseEntity<EnvironmentDto> response = environmentController.updateEnvironment(new EnvironmentDto(), 4L);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
@@ -208,10 +290,10 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findByProjectId(3L)).thenReturn(List.of(storedEnvironment));
 
-        ResponseEntity<List<Environment>> response = environmentController.getEnvironmentsByProjectId(3L);
+        ResponseEntity<List<EnvironmentDto>> response = environmentController.getEnvironmentsByProjectId(3L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        List<Environment> environments = Objects.requireNonNull(response.getBody());
+        List<EnvironmentDto> environments = Objects.requireNonNull(response.getBody());
         assertThat(environments).isNotNull();
         assertThat(environments).hasSize(1);
         assertEquals(MASKED_PASSWORD, environments.get(0).getPassword());
@@ -223,7 +305,7 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findByProjectId(6L)).thenReturn(List.of());
 
-        ResponseEntity<List<Environment>> response = environmentController.getEnvironmentsByProjectId(6L);
+        ResponseEntity<List<EnvironmentDto>> response = environmentController.getEnvironmentsByProjectId(6L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
     }
@@ -234,7 +316,7 @@ class EnvironmentControllerTest
     {
         when(environmentRepo.findByProjectId(7L)).thenThrow(new RuntimeException("sql"));
 
-        ResponseEntity<List<Environment>> response = environmentController.getEnvironmentsByProjectId(7L);
+        ResponseEntity<List<EnvironmentDto>> response = environmentController.getEnvironmentsByProjectId(7L);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
@@ -246,11 +328,23 @@ class EnvironmentControllerTest
         environment.setName(name);
         environment.setUsername(username);
         environment.setPassword(password);
-        environment.setUrl(url);
+        environment.setUrl(url.toString());
         Project project = new Project();
         project.setId(10L);
         environment.setProject(project);
         return environment;
+    }
+
+    private EnvironmentDto buildEnvironmentDto (Long id, String name, String username, String password, String url, Long projectId)
+    {
+        EnvironmentDto dto = new EnvironmentDto();
+        dto.setId(id);
+        dto.setName(name);
+        dto.setUsername(username);
+        dto.setPassword(password);
+        dto.setUrl(url);
+        dto.setProjectID(projectId);
+        return dto;
     }
 
     private URL uriToUrl (String value) throws Exception

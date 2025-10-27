@@ -18,6 +18,7 @@
         <mapping class="com.example.backend.models.Environment"/>
         <mapping class="com.example.backend.models.TestModel"/>
         <mapping class="com.example.backend.models.TestRun"/>
+        <mapping class="com.example.backend.models.TestStep"/>
         <mapping class="com.example.backend.models.UserStory"/>
     </session-factory>
 </hibernate-configuration>

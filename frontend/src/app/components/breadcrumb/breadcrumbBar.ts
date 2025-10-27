@@ -1,8 +1,10 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit, ChangeDetectorRef} from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
-import {filter} from 'rxjs';
+import {filter, forkJoin, Subscription, timeout} from 'rxjs';
 import {Breadcrumb} from 'primeng/breadcrumb';
 import {MenuItem} from 'primeng/api';
+import {ProjectService} from '../../services/project.service';
+import {UserStoryService} from '../../services/user-story.service';
 
 @Component({
   selector: 'app-breadcrumbBar',
@@ -12,51 +14,109 @@ import {MenuItem} from 'primeng/api';
   templateUrl: './breadcrumbBar.html',
   styleUrl: './breadcrumbBar.scss'
 })
-
-export class BreadcrumbBar implements OnInit {
+export class BreadcrumbBar implements OnInit, OnDestroy {
   items: MenuItem[] = [];
-  home: MenuItem = {icon: 'pi pi-home', routerLink: '/'};
+  home: MenuItem = {
+    icon: 'pi pi-home',
+    url: '/'
+  };
+
+  private projectService = inject(ProjectService);
+  private userStoryService = inject(UserStoryService);
+  private cdr = inject(ChangeDetectorRef);
+  private routerSubscription?: Subscription;
+  private dataSubscription?: Subscription;
 
   constructor(private router: Router, private activatedRoute: ActivatedRoute) {
   }
 
   ngOnInit() {
-    this.router.events
+    this.updateBreadcrumbs();
+
+    this.routerSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
-        this.items = this.createBreadcrumbs(this.activatedRoute.root);
+        this.updateBreadcrumbs();
       });
   }
 
-  private createBreadcrumbs(route: ActivatedRoute, url: string = '', breadcrumbs: MenuItem[] = []): MenuItem[] {
-    const children: ActivatedRoute[] = route.children;
-
-    if (children.length === 0) {
-      return breadcrumbs;
-    }
-    console.log(route);
-
-    for (const child of children) {
-      const routeConfig = child.routeConfig;
-
-      if (!routeConfig) {
-        continue;
-      }
-
-      if (routeConfig.path) {
-        const routeURL = routeConfig.path;
-        url += `/${routeURL}`;
-
-        const label = routeConfig.data?.['breadcrumb'];
-        if (label) {
-          breadcrumbs.push({label, routerLink: url});
-        }
-      }
-
-      return this.createBreadcrumbs(child, url, breadcrumbs);
-    }
-
-    return breadcrumbs;
+  ngOnDestroy() {
+    this.routerSubscription?.unsubscribe();
+    this.dataSubscription?.unsubscribe();
   }
 
+  private updateBreadcrumbs(): void {
+    this.dataSubscription?.unsubscribe();
+
+    const params = this.getAllRouteParams(this.activatedRoute.root);
+    const projectId = params['projectId'] ? +params['projectId'] : (params['proId'] ? +params['proId'] : null);
+    const storyId = params['storyId'] ? +params['storyId'] : null;
+
+    if (projectId && storyId) {
+      this.items = [
+        {label: 'Loading...', url: `/project/${projectId}`},
+        {label: 'Loading...', url: `/project/${projectId}/story/${storyId}`}
+      ];
+
+      this.dataSubscription = forkJoin({
+        project: this.projectService.getProjectById(projectId),
+        story: this.userStoryService.getUserStoryById(storyId)
+      }).subscribe({
+        next: ({project, story}) => {
+          this.items = [
+            {
+              label: project.body?.name || 'Project',
+              url: `/project/${projectId}`
+            },
+            {
+              label: story.body?.name || 'Story',
+              url: `/project/${projectId}/story/${storyId}`
+            }
+          ];
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          console.error('Error loading breadcrumb data:', err);
+          this.items = [
+            {label: 'Project', url: `/project/${projectId}`},
+            {label: 'Story', url: `/project/${projectId}/story/${storyId}`}
+          ];
+        }
+      });
+    } else if (projectId) {
+      this.items = [{label: 'Loading...', url: `/project/${projectId}`}];
+
+      this.dataSubscription = this.projectService.getProjectById(projectId)
+        .pipe(timeout(5000))
+        .subscribe({
+          next: response => {
+            this.items = [
+              {
+                label: response.body?.name || 'Project',
+                url: `/project/${projectId}`
+              }
+            ];
+
+            this.cdr.detectChanges();
+          },
+          error: err => {
+            this.items = [{label: 'Project', url: `/project/${projectId}`}];
+          }
+        });
+    } else {
+      this.items = [];
+    }
+  }
+
+  private getAllRouteParams(route: ActivatedRoute): any {
+    let params = {};
+
+    let currentRoute: ActivatedRoute | null = route;
+    while (currentRoute) {
+      params = {...params, ...currentRoute.snapshot.params};
+      currentRoute = currentRoute.firstChild;
+    }
+
+    return params;
+  }
 }

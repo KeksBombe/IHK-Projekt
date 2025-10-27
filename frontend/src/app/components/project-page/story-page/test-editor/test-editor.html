@@ -1,54 +1,54 @@
-<div class="test-editor">
-  @if (hasTestFile()) {
-    <p-card class="w-full mb-4"
-            [ngClass]="{'test-passed': testStatus() === 'passed', 'test-failed': testStatus() === 'failed'}">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-file-code text-primary-500"></i>
-          <h4 class="text-base font-semibold m-0">Generiertes Test-Skript</h4>
-        </div>
-        <div class="flex gap-2">
-          <p-button
-            label="Test ausführen"
-            icon="pi pi-play"
-            size="small"
-            severity="success"
-            [loading]="isRunningTest()"
-            (onClick)="runTest()">
-          </p-button>
-          <p-button
-            label="Testläufe"
-            icon="pi pi-clock"
-            size="small"
-            severity="info"
-            [loading]="isLoadingTestRuns()"
-            (onClick)="openTestRunsDrawer()">
-          </p-button>
-          <p-button
-            label="Skript anzeigen & bearbeiten"
-            icon="pi pi-code"
-            size="small"
-            (onClick)="openCodeDialog()">
-          </p-button>
-        </div>
+@if (hasTestFile()) {
+  <p-card class="w-full mb-4"
+          [ngClass]="{'test-passed': testStatus() === 'passed', 'test-failed': testStatus() === 'failed'}">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-file-code text-primary-500"></i>
+        <h4 class="text-base font-semibold m-0">Generiertes Test-Skript</h4>
       </div>
-      <div class="mt-3 text-sm text-gray-600">
-        @if (testResult()) {
-          <span class="font-semibold">Letzter Lauf:</span>
-          <span class="ml-1">{{ testResult()?.executedAt | date:'short' }}</span>
-          <div class="mt-1 text-gray-500">{{ testResult()?.description }}</div>
-        } @else {
-          <span class="text-gray-500">Für diesen Test liegen noch keine Ausführungen vor.</span>
-        }
+      <div class="flex gap-2">
+        <p-button
+          label="Test ausführen"
+          icon="pi pi-play"
+          size="small"
+          severity="success"
+          [loading]="isRunningTest()"
+          (onClick)="runTest()">
+        </p-button>
+        <p-button
+          label="Testläufe"
+          icon="pi pi-clock"
+          size="small"
+          severity="info"
+          [loading]="isLoadingTestRuns()"
+          (onClick)="openTestRunsDrawer()">
+        </p-button>
+        <p-button
+          label="Skript anzeigen & bearbeiten"
+          icon="pi pi-code"
+          size="small"
+          (onClick)="openCodeDialog()">
+        </p-button>
       </div>
-    </p-card>
-  }
+    </div>
+    <div class="mt-3 text-sm text-gray-600">
+      @if (testResult()) {
+        <span class="font-semibold">Letzter Lauf:</span>
+        <span class="ml-1">{{ testResult()?.executedAt | date:'short' }}</span>
+        <div class="mt-1 text-gray-500">{{ testResult()?.description }}</div>
+      } @else {
+        <span class="text-gray-500">Für diesen Test liegen noch keine Ausführungen vor.</span>
+      }
+    </div>
+  </p-card>
+}
 
+<div class="test-editor">
   <div class="flex items-center justify-between mb-4">
     <h4 class="text-base font-semibold m-0">{{ test().name }}</h4>
     <div class="flex gap-2">
       <p-button
-        label="Mit KI ausführen"
+        label="Skript mit KI generieren"
         icon="pi pi-microchip-ai"
         size="small"
         variant="outlined"

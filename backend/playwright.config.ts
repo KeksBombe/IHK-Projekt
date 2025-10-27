@@ -6,7 +6,10 @@ export default defineConfig({
     forbidOnly: false,
     retries: 0,
     workers: 1,
-    reporter: 'json',
+    reporter: [
+        ['json'],
+        ['html', {outputFolder: 'playwright-report', open: 'never'}], // saves HTML report
+    ],
     use: {
         trace: 'on-first-retry',
         headless: false,

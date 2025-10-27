@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 
 import com.example.backend.exceptions.GenerationException;
+import com.example.backend.dto.TestDto;
 import com.example.backend.models.Environment;
 import com.example.backend.models.GenerationState;
 import com.example.backend.models.TestModel;
@@ -30,14 +31,8 @@ public class AiService
         try
         {
             test.setGenerationState(GenerationState.IN_PROGRESS);
-            String testStepsCSV = test.getTestCSV();
-            Environment testEnv = null;
-            boolean hasEnv = false;
-            if (test.getEnvironment() != null)
-            {
-                testEnv = test.getEnvironment();
-                hasEnv = true;
-            }
+            String testStepsCSV = TestDto.stepsToCsv(test.getSteps());
+            boolean hasEnv = test.getEnvironment() != null;
 
             if (testStepsCSV == null || testStepsCSV.trim().isEmpty())
             {
@@ -75,10 +70,11 @@ public class AiService
             StringBuilder userMessage = new StringBuilder();
             if (hasEnv)
             {
+                Environment env = test.getEnvironment();
                 userMessage
-                        .append("Environment:\n\n URL: ").append(testEnv.getUrl())
-                        .append("\n\nUsername: ").append(testEnv.getUsername())
-                        .append("\n\n Password: ").append(testEnv.getPassword()).append("\n\n");
+                        .append("Environment:\n\n URL: ").append(env.getUrl())
+                        .append("\n\nUsername: ").append(env.getUsername())
+                        .append("\n\n Password: ").append(env.getPassword()).append("\n\n");
             }
             userMessage.append("Here are the test steps to execute in CSV format:\n\n").append(testStepsCSV);
 

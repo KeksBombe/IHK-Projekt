@@ -4,7 +4,10 @@ package com.example.backend.controller;
 import com.example.backend.dto.EnvironmentDto;
 import com.example.backend.mapper.EnvironmentMapper;
 import com.example.backend.models.Environment;
+import com.example.backend.models.Project;
 import com.example.backend.repo.EnvironmentRepo;
+import com.example.backend.repo.ProjectRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,19 +17,22 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 
+@Slf4j
 @RestController
 public class EnvironmentController
 {
 
     private final EnvironmentRepo environmentRepo;
     private final EnvironmentMapper environmentMapper;
+    private final ProjectRepo projectRepo;
 
     private static final String MASKED_PASSWORD = "************";
 
-    public EnvironmentController (EnvironmentRepo environmentRepo, EnvironmentMapper environmentMapper)
+    public EnvironmentController (EnvironmentRepo environmentRepo, EnvironmentMapper environmentMapper, ProjectRepo projectRepo)
     {
         this.environmentRepo = environmentRepo;
         this.environmentMapper = environmentMapper;
+        this.projectRepo = projectRepo;
     }
 
     /**
@@ -65,10 +71,26 @@ public class EnvironmentController
         {
             Environment environment = environmentMapper.toEntity(environmentDto);
             environment.setId(null);
+
+            // Fetch and set the managed Project entity if projectID is provided
+            if (environmentDto.getProjectID() != null)
+            {
+                Optional<Project> project = projectRepo.findById(environmentDto.getProjectID());
+                if (project.isPresent())
+                {
+                    environment.setProject(project.get());
+                } else
+                {
+                    log.error("Project with ID {} not found", environmentDto.getProjectID());
+                    return ResponseEntity.badRequest().build();
+                }
+            }
+            
             Environment savedEnvironment = environmentRepo.save(environment);
             return ResponseEntity.status(HttpStatus.CREATED).body(maskPassword(savedEnvironment));
         } catch (Exception e)
         {
+            log.error("Error creating environment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -123,10 +145,13 @@ public class EnvironmentController
         try
         {
             List<Environment> environments = environmentRepo.findByProjectId(projectId);
+
             if (environments.isEmpty())
             {
                 return ResponseEntity.noContent().build();
             }
+
+            log.debug("Found {} environments for projectId {}", environments.size(), projectId);
 
             List<EnvironmentDto> maskedEnvironments = environments.stream()
                     .map(this::maskPassword)

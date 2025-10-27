@@ -15,6 +15,7 @@ import {EnvironmentService} from '../../services/environment.service';
 import {envItem} from './env-item/env-item';
 import {Message} from 'primeng/message';
 import {Card} from 'primeng/card';
+import {ButtonGroup} from 'primeng/buttongroup';
 
 @Component({
   selector: 'app-project-page',
@@ -31,7 +32,8 @@ import {Card} from 'primeng/card';
     ProjectSearch,
     envItem,
     Message,
-    Card
+    Card,
+    ButtonGroup
   ],
   templateUrl: './project-page.html',
   styleUrl: './project-page.scss'
@@ -249,6 +251,15 @@ export class ProjectPage implements OnInit {
         this.showEnvDetailDialog = false;
         this.selectedEnvironment = null;
         this.cdr.detectChanges();
+      });
+    }
+  }
+
+  deleteProject() {
+    if (confirm(`Möchten Sie das Projekt "${this.currentProject.name}" wirklich löschen? Alle zugehörigen User Stories und Umgebungen werden ebenfalls gelöscht.`)) {
+      this.projectService.deleteProject(this.currentProject.id).subscribe(() => {
+        // Navigate back to landing page after deletion
+        window.location.href = '/';
       });
     }
   }

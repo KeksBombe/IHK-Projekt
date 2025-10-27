@@ -1,6 +1,8 @@
 package com.example.backend.controller;
 
 
+import com.example.backend.dto.TestRunDto;
+import com.example.backend.mapper.TestRunMapper;
 import com.example.backend.models.TestRun;
 import com.example.backend.repo.TestRepo;
 import com.example.backend.repo.TestRunRepo;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -22,15 +25,17 @@ public class TestRunController
 {
     private final TestRepo testRepo;
     private final TestRunRepo testRunRepo;
+    private final TestRunMapper testRunMapper;
 
-    public TestRunController (TestRepo testRepo, TestRunRepo testRunRepo)
+    public TestRunController (TestRepo testRepo, TestRunRepo testRunRepo, TestRunMapper testRunMapper)
     {
         this.testRepo = testRepo;
         this.testRunRepo = testRunRepo;
+        this.testRunMapper = testRunMapper;
     }
 
     @GetMapping("/{id}/runs")
-    public ResponseEntity<List<TestRun>> getRunsForTest (@PathVariable Long id)
+    public ResponseEntity<List<TestRunDto>> getRunsForTest (@PathVariable Long id)
     {
         try
         {
@@ -45,7 +50,11 @@ public class TestRunController
                 return ResponseEntity.noContent().build();
             }
 
-            return ResponseEntity.ok(runs);
+            List<TestRunDto> runDtos = runs.stream()
+                    .map(testRunMapper::toDto)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(runDtos);
         } catch (Exception e)
         {
             log.error("Failed to load test runs for test {}", id, e);

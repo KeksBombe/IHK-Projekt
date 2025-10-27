@@ -5,8 +5,11 @@ import com.example.backend.dto.CreateTestRequest;
 import com.example.backend.dto.TestDto;
 import com.example.backend.models.Environment;
 import com.example.backend.models.TestModel;
+import com.example.backend.models.TestStep;
 import com.example.backend.models.UserStory;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 
 @Component
@@ -24,7 +27,7 @@ public class TestMapper
         dto.setId(test.getId());
         dto.setName(test.getName());
         dto.setDescription(test.getDescription());
-        dto.setTestCSV(test.getTestCSV());
+        dto.setTestCSV(TestDto.stepsToCsv(test.getSteps()));
         dto.setEnvironmentID(test.getEnvironment() != null ? test.getEnvironment().getId() : null);
         dto.setStoryID(test.getUserStory() != null ? test.getUserStory().getId() : null);
         dto.setGenerationState(test.getGenerationState());
@@ -42,8 +45,16 @@ public class TestMapper
         test.setId(dto.getId());
         test.setName(dto.getName());
         test.setDescription(dto.getDescription());
-        test.setTestCSV(dto.getTestCSV());
         test.setGenerationState(dto.getGenerationState());
+
+        // Map CSV into TestStep entities and attach
+        List<TestStep> steps = TestDto.parseCsvToSteps(dto.getTestCSV());
+        for (TestStep s : steps)
+        {
+            s.setTestModel(test);
+        }
+        test.getSteps().clear();
+        test.getSteps().addAll(steps);
 
         if (dto.getEnvironmentID() != null)
         {
@@ -72,7 +83,14 @@ public class TestMapper
         TestModel test = new TestModel();
         test.setName(request.getName());
         test.setDescription(request.getDescription());
-        test.setTestCSV(request.getTestCSV());
+
+        // Map CSV into TestStep entities and attach
+        List<TestStep> steps = TestDto.parseCsvToSteps(request.getTestCSV());
+        for (TestStep s : steps)
+        {
+            s.setTestModel(test);
+        }
+        test.getSteps().addAll(steps);
 
         if (request.getEnvironmentID() != null)
         {

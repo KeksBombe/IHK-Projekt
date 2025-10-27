@@ -4,6 +4,9 @@ package com.example.backend.models;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Entity
 @Data
@@ -22,9 +25,6 @@ public class TestModel
     private String name;
 
     private String description;
-    
-    @Column(columnDefinition = "TEXT")
-    private String testCSV;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "environmentid", referencedColumnName = "id")
@@ -36,5 +36,8 @@ public class TestModel
 
     @Enumerated(EnumType.STRING)
     private GenerationState generationState = GenerationState.NOT_STARTED;
+
+    @OneToMany(mappedBy = "testModel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TestStep> steps = new ArrayList<>();
 
 }

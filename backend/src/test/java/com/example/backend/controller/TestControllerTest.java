@@ -5,7 +5,6 @@ import com.example.backend.constants.EFileType;
 import com.example.backend.dto.CreateTestRequest;
 import com.example.backend.dto.TestDto;
 import com.example.backend.dto.TestRunDto;
-import com.example.backend.exceptions.GenerationException;
 import com.example.backend.mapper.TestMapper;
 import com.example.backend.mapper.TestRunMapper;
 import com.example.backend.models.PlaywrightTest;
@@ -26,13 +25,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+
 import static org.mockito.Mockito.*;
 
 
@@ -70,7 +69,6 @@ class TestControllerTest
         testModel = new TestModel();
         testModel.setId(11L);
         testModel.setName("Smoke Test");
-        testModel.setTestCSV("step,action,expected\n1,open,'done'");
 
         testDto = new TestDto();
         testDto.setId(11L);
@@ -141,7 +139,7 @@ class TestControllerTest
         ResponseEntity<TestDto> response = testController.createTest(request);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        TestDto created = response.getBody();
+        TestDto created = Objects.requireNonNull(response.getBody());
         assertEquals(22L, created.getId());
     }
 
@@ -174,7 +172,7 @@ class TestControllerTest
         ResponseEntity<TestDto> response = testController.updateTest(11L, updateDto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        TestDto persisted = response.getBody();
+        TestDto persisted = Objects.requireNonNull(response.getBody());
         assertEquals("Updated", persisted.getName());
     }
 
@@ -215,7 +213,7 @@ class TestControllerTest
         ResponseEntity<PlaywrightTest> response = testController.getTestCodeById(11L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        PlaywrightTest body = response.getBody();
+        PlaywrightTest body = Objects.requireNonNull(response.getBody());
         assertEquals(expected, body.getCode());
         assertEquals(11L, body.getTestID());
     }
@@ -263,6 +261,7 @@ class TestControllerTest
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertThat(response.getBody()).isNotNull();
-        assertEquals(100L, response.getBody().getId());
+        TestRunDto bodyDto = Objects.requireNonNull(response.getBody());
+        assertEquals(100L, bodyDto.getId());
     }
 }

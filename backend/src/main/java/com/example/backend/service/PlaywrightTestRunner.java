@@ -107,7 +107,7 @@ public class PlaywrightTestRunner
         List<String> command = new ArrayList<>();
         String os = System.getProperty("os.name").toLowerCase();
 
-        String playwrightCommand = "npx playwright test " + testFileName + " --reporter=json";
+        String playwrightCommand = "npx playwright test " + testFileName;
 
         if (os.contains("win"))
         {

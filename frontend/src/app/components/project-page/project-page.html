@@ -4,12 +4,21 @@
       <div class="flex items-center gap-2">
         @if (!isLoading) {
           <h2>{{ currentProject.name }}</h2>
+          <p-button-group>
           <p-button
             icon="pi pi-pencil"
             [rounded]="true"
             [text]="true"
             (onClick)="showEditDialog()">
           </p-button>
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [rounded]="true"
+              [text]="true"
+              (onClick)="deleteProject()"
+            ></p-button>
+          </p-button-group>
         } @else {
           <p>Loading project...</p>
         }
